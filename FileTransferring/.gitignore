@@ -1,0 +1,32 @@
+##############################
+## Java
+##############################
+.mtj.tmp/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+
+##############################
+## Gradle
+##############################
+bin/
+build/
+gradle/
+.gradle/
+gradlew
+gradlew.bat
+
+##############################
+## IntelliJ
+##############################
+out/
+.idea/
+.idea_modules/
+*.iml
+*.ipr
+*.iws
+
+uploads/
