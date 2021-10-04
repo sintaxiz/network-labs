@@ -6,11 +6,15 @@ import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 public class FTClientApplication {
     private final static int BUFF_SIZE = 4096;
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) {
         Socket socket = new Socket();
         if (args.length < 3) {
             System.out.println("usage: file_name server_address server_port");
@@ -26,10 +30,9 @@ public class FTClientApplication {
             socket.connect(new InetSocketAddress(serverName, serverPort));
             OutputStream outputStream = socket.getOutputStream();
 
-            FileInfo fileInfo = new FileInfo(filePath, Files.size(file));
+            FileInfo fileInfo = new FileInfo(filePath, Files.size(file), calculateHash(file));
             TransferProtocol.writeFileInfo(outputStream, fileInfo);
             uploadFile(outputStream, Files.newInputStream(file));
-
             boolean isSuccessTransfer = TransferProtocol.readACK(socket.getInputStream()); // wait while all file was transmitted
             if (isSuccessTransfer) {
                 System.out.println("horay! successfully transmitted file " + file + " to server c:");
@@ -37,9 +40,18 @@ public class FTClientApplication {
                 System.out.println("oh no! there is some error on server side while transferring file :c");
             }
             socket.close();
-        } catch (IOException e) {
+        } catch (IOException | NoSuchAlgorithmException e) {
             e.printStackTrace();
         }
+    }
+
+    private static byte[] calculateHash(Path file) throws IOException, NoSuchAlgorithmException {
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        try (InputStream is = Files.newInputStream(file);
+             DigestInputStream dis = new DigestInputStream(is, md)) {
+            while (dis.read(new byte[4096]) > 0) ;
+        }
+        return md.digest();
     }
 
 

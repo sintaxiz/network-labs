@@ -6,6 +6,10 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -45,10 +49,13 @@ public class ClientConnection implements Runnable {
             newFileStream = createFile(newFile);
             fileSizeBytes = fileInfo.getSize();
             speedMeasurer.scheduleAtFixedRate(this::measureSpeed, 0, MEASURE_PERIOD_SEC, TimeUnit.SECONDS);
-            downloadFile(socketStream, newFileStream);
-            TransferProtocol.writeACK(socket.getOutputStream(), true);
+
+            byte[] checksum = downloadFile(socketStream, newFileStream);
+
+            // if counted checksum equals checksum from file info, send true
+            TransferProtocol.writeACK(socket.getOutputStream(), Arrays.equals(checksum, fileInfo.getHash()));
             newFileStream.close();
-        } catch (IOException e) {
+        } catch (IOException | NoSuchAlgorithmException e) {
             e.printStackTrace();
             try {
                 if (newFileStream != null) {
@@ -77,7 +84,7 @@ public class ClientConnection implements Runnable {
         long endTime = System.currentTimeMillis();
         long endBytes = transferredBytes.get();
         double curSpeed = (endBytes - startBytes) / (millisToSec(endTime - startTime) * 1024.0);
-        double averSpeed = (fileSizeBytes - endBytes) / (((double) transferTimeMillis.get() / 1000) * 1024.0);
+        double averSpeed = (fileSizeBytes - transferredBytes.get()) / (((double) transferTimeMillis.get() / 1000.0) * 1024.0);
         System.out.println(socket + ": current speed = " +
                 String.format("%,.2f", curSpeed) + "kb/s, " +
                 "average speed = " +
@@ -98,20 +105,20 @@ public class ClientConnection implements Runnable {
         }
     }
 
-    private void downloadFile(InputStream input, OutputStream out) throws IOException {
+    private byte[] downloadFile(InputStream input, OutputStream out) throws IOException, NoSuchAlgorithmException {
         byte[] bytes = new byte[BUFF_SIZE];
         System.out.println("filesize=" + fileSizeBytes);
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        DigestInputStream checksumStream = new DigestInputStream(input, md);
         int readBytes;
         for (long i = 0; i < fileSizeBytes; i += readBytes) {
+            readBytes = checksumStream.read(bytes);
             long startMeasuring = System.currentTimeMillis();
-            readBytes = input.read(bytes);
-            if (readBytes == -1) {
-                throw new IOException("unexpected end of stream");
-            }
             out.write(bytes, 0, readBytes);
             transferredBytes.addAndGet(readBytes);
             long endMeasuring = System.currentTimeMillis();
             transferTimeMillis.addAndGet(endMeasuring - startMeasuring);
         }
+        return md.digest();
     }
 }
