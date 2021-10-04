@@ -1,0 +1,5 @@
+rootProject.name = 'FileTransferring'
+include 'FileTransferClient'
+include 'FileTransferServer'
+include 'FileTransferProtocol'
+
