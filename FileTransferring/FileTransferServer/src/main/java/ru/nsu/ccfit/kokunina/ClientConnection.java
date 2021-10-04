@@ -11,10 +11,12 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static java.lang.Thread.sleep;
 import static java.nio.file.StandardOpenOption.*;
 
 public class ClientConnection implements Runnable {
     final private int BUFF_SIZE = 256;
+    final private int MEASURE_PERIOD_SEC = 3; // in seconds
 
     final private String uploadPath;
     final private Socket socket;
@@ -22,6 +24,7 @@ public class ClientConnection implements Runnable {
     // for measuring speed
     private long fileSizeBytes;
     private final AtomicLong transferredBytes = new AtomicLong(0);
+    private final AtomicLong transferTimeMillis = new AtomicLong(0);
 
     public ClientConnection(Socket socket, String uploadPath) {
         this.socket = socket;
@@ -41,7 +44,7 @@ public class ClientConnection implements Runnable {
             newFile = Paths.get(uploadPath, fileName);
             newFileStream = createFile(newFile);
             fileSizeBytes = fileInfo.getSize();
-            speedMeasurer.scheduleAtFixedRate(this::measureSpeed, 0, 1, TimeUnit.SECONDS);
+            speedMeasurer.scheduleAtFixedRate(this::measureSpeed, 0, MEASURE_PERIOD_SEC, TimeUnit.SECONDS);
             downloadFile(socketStream, newFileStream);
             TransferProtocol.writeACK(socket.getOutputStream(), true);
             newFileStream.close();
@@ -64,19 +67,22 @@ public class ClientConnection implements Runnable {
     }
 
     private void measureSpeed() {
+        long startTime = System.currentTimeMillis();
+        long startBytes = transferredBytes.get();
         try {
-            long startTime = System.currentTimeMillis();
-            long startBytes = transferredBytes.get();
-            Thread.sleep(1000);
-            long endTime = System.currentTimeMillis();
-            double speed = transferredBytes.get() - startBytes;
-            System.out.println(socket + ": speed = " +
-                    String.format("%,.2f", speed / (millisToSec(endTime - startTime) * 1024 * 1024))
-                    + "kb/s, " +
-                    (transferredBytes.get() * 100) / fileSizeBytes + "% was transferred");
+            sleep(1000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        long endTime = System.currentTimeMillis();
+        long endBytes = transferredBytes.get();
+        double curSpeed = (endBytes - startBytes) / (millisToSec(endTime - startTime) * 1024.0);
+        double averSpeed = (fileSizeBytes - endBytes) / (((double) transferTimeMillis.get() / 1000) * 1024.0);
+        System.out.println(socket + ": current speed = " +
+                String.format("%,.2f", curSpeed) + "kb/s, " +
+                "average speed = " +
+                String.format("%,.2f", averSpeed) + "kb/s, " +
+                (transferredBytes.get() * 100) / fileSizeBytes + "% was transferred");
         System.out.println();
     }
 
@@ -97,12 +103,15 @@ public class ClientConnection implements Runnable {
         System.out.println("filesize=" + fileSizeBytes);
         int readBytes;
         for (long i = 0; i < fileSizeBytes; i += readBytes) {
+            long startMeasuring = System.currentTimeMillis();
             readBytes = input.read(bytes);
             if (readBytes == -1) {
                 throw new IOException("unexpected end of stream");
             }
             out.write(bytes, 0, readBytes);
             transferredBytes.addAndGet(readBytes);
+            long endMeasuring = System.currentTimeMillis();
+            transferTimeMillis.addAndGet(endMeasuring - startMeasuring);
         }
     }
 }

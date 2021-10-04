@@ -19,4 +19,5 @@ public class FileInfo {
     public long getSize() {
         return size;
     }
+
 }

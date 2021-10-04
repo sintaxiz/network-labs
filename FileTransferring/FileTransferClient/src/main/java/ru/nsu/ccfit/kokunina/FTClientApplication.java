@@ -42,6 +42,7 @@ public class FTClientApplication {
         }
     }
 
+
     private static void uploadFile(OutputStream outputStream, InputStream fileStream) throws IOException {
         byte[] buff = new byte[BUFF_SIZE];
         int readBytes;
