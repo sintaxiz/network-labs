@@ -1,0 +1,10 @@
+/protobuf/
+/.gradle/
+/.idea/
+/build/
+/gradle/
+/logs/
+/src/main/java/ru/nsu/ccfit/kokunina/snakes/SnakesProto.java
+/src/main/java/ru/nsu/ccfit/kokunina/Main.java
+gradlew
+gradlew.bat
