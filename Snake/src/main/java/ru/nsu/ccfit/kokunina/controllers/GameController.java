@@ -1,20 +1,20 @@
 package ru.nsu.ccfit.kokunina.controllers;
 
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.ListView;
-import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
-import javafx.scene.layout.RowConstraints;
-import javafx.scene.layout.TilePane;
-import javafx.scene.paint.Paint;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.util.Pair;
+import ru.nsu.ccfit.kokunina.game.CellState;
 import ru.nsu.ccfit.kokunina.game.Game;
 
 import java.io.IOException;
@@ -27,9 +27,10 @@ public class GameController implements Initializable {
     public Text masterName;
     public Text fieldSize;
     public Text foodCount;
-    public TilePane gameField;
+    public GridPane gameField;
 
     private Game game;
+
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
@@ -40,17 +41,26 @@ public class GameController implements Initializable {
         Pair<Integer, Integer> gridSize = game.getGameFieldSize();
         int rows = gridSize.getKey();
         int columns = gridSize.getValue();
+        final double CELL_SIZE = 800 / rows;
+
+
         fieldSize.setText(rows + "x" + columns);
-        gameField.setMinSize(columns * 11, rows * 10);
+
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < columns; j++) {
-                gameField.getChildren().add(new Rectangle(10,10));
+                Rectangle cell = new Rectangle(CELL_SIZE, CELL_SIZE);
+                gameField.add(cell, i, j);
+                ObjectProperty<CellState> state = new SimpleObjectProperty<>(CellState.EMPTY);
+                state.bind(game.getCellStateProperty(i, j));
+                state.addListener((observableCell, oldState, newState) -> {
+                    switch (newState) {
+                        case SNAKE -> cell.setFill(Color.WHITE);
+                        case FOOD -> cell.setFill(Color.RED);
+                        case EMPTY -> cell.setFill(Color.BLACK);
+                    }
+                });
             }
         }
-        // bind
-        // add listener
-
-
     }
 
     public void handleExitGameButton(ActionEvent actionEvent) throws IOException {
