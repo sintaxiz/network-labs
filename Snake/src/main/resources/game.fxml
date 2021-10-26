@@ -4,33 +4,40 @@
 <?import javafx.scene.layout.*?>
 
 <?import javafx.scene.text.Text?>
-<GridPane xmlns="http://javafx.com/javafx"
-          xmlns:fx="http://javafx.com/fxml"
-          fx:controller="ru.nsu.ccfit.kokunina.controllers.GameController"
-          prefHeight="400.0" prefWidth="600.0"
-          onKeyPressed="#handleKeyPressed">
+<?import javafx.geometry.Insets?>
+<HBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="ru.nsu.ccfit.kokunina.controllers.GameController"
+      prefHeight="400.0" prefWidth="600.0"
+      onKeyPressed="#handleKeyPressed"
+      stylesheets="@styles/app.css"
+      spacing="10">
+
     <GridPane fx:id="gameField"/>
-    <VBox GridPane.hgrow="ALWAYS" GridPane.columnIndex="1" GridPane.rowIndex="0">
-        <Label>Player list</Label>
-        <ListView fx:id="playerList"/>
+
+    <VBox spacing="10" >
+        <VBox>
+            <Text>Player list</Text>
+            <ListView fx:id="playerList"/>
+        </VBox>
+
+        <GridPane>
+            <Text GridPane.columnIndex="0" GridPane.rowIndex="0">Game info</Text>
+
+            <Text GridPane.columnIndex="0" GridPane.rowIndex="1">Master:</Text>
+            <Text GridPane.columnIndex="1" GridPane.rowIndex="1" fx:id="masterName">[somebody]</Text>
+
+            <Text GridPane.columnIndex="0" GridPane.rowIndex="2">Size:</Text>
+            <Text GridPane.columnIndex="1" GridPane.rowIndex="2" fx:id="fieldSize">[40x40]</Text>
+
+            <Text GridPane.columnIndex="0" GridPane.rowIndex="3">Food:</Text>
+            <Text GridPane.columnIndex="1" GridPane.rowIndex="3" fx:id="foodCount">[number]</Text>
+        </GridPane>
+        <Button onAction="#handleExitGameButton">
+            <VBox.margin>
+                <Insets bottom="25.0"/>
+            </VBox.margin>
+            Exit game
+        </Button>
     </VBox>
-
-    <GridPane GridPane.columnIndex="1" GridPane.rowIndex="1">
-        <Text GridPane.columnIndex="0" GridPane.rowIndex="0">Game info</Text>
-
-        <Text GridPane.columnIndex="0" GridPane.rowIndex="1">Master:</Text>
-        <Text GridPane.columnIndex="1" GridPane.rowIndex="1" fx:id="masterName">[somebody]</Text>
-
-        <Text GridPane.columnIndex="0" GridPane.rowIndex="2">Size:</Text>
-        <Text GridPane.columnIndex="1" GridPane.rowIndex="2" fx:id="fieldSize">[40x40]</Text>
-
-        <Text GridPane.columnIndex="0" GridPane.rowIndex="3">Food:</Text>
-        <Text GridPane.columnIndex="1" GridPane.rowIndex="3" fx:id="foodCount">[number]</Text>
-    </GridPane>
-    <Button GridPane.columnIndex="1" GridPane.rowIndex="2" GridPane.halignment="RIGHT"
-            onAction="#handleExitGameButton">
-        Exit game
-    </Button>
-
-
-</GridPane>
+</HBox>

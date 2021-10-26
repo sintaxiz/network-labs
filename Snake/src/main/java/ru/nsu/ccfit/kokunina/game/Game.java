@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
 import ru.nsu.ccfit.kokunina.multicast.MulticastSender;
 
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Random;
 
 public class Game {
@@ -18,20 +20,24 @@ public class Game {
     private final StringProperty masterName;
     private final Cell[][] cells;
     private final Snake masterSnake;
+    private final ArrayList<Snake> snakes;
 
-    private final int COLUMN_COUNT = 30;
-    private final int ROWS_COUNT = 40;
+    private final int COLUMN_COUNT;
+    private final int ROWS_COUNT;
 
-    public Game() {
+    public Game(GameConfig config) {
         foodCount = new SimpleStringProperty("300");
         masterName = new SimpleStringProperty("Danil");
+        snakes = new ArrayList<>();
+        COLUMN_COUNT = config.getWidth();
+        ROWS_COUNT = config.getHeight();
         cells = new Cell[COLUMN_COUNT][ROWS_COUNT];
         for (int i = 0; i < COLUMN_COUNT; i++) {
             for (int j = 0; j < ROWS_COUNT; j++) {
                 cells[i][j] = new Cell();
             }
         }
-        masterSnake = new Snake(cells, new Coordinates(20, 10), SnakeDirection.LEFT);
+        masterSnake = new Snake(cells, new Coordinates(0, 0), SnakeDirection.LEFT);
         try {
             Thread sender = new Thread(new MulticastSender());
             sender.start();
@@ -39,42 +45,11 @@ public class Game {
             System.out.println("Can not start game");
             e.printStackTrace();
         }
-        lastDirection = masterSnake.getDirection();
-    }
 
-    private SnakeDirection lastDirection;
+        snakes.add(new Snake(cells, new Coordinates(10, 10), SnakeDirection.LEFT));
+        snakes.add(new Snake(cells, new Coordinates(10, 11), SnakeDirection.LEFT));
+        snakes.add(new Snake(cells, new Coordinates(10, 12), SnakeDirection.LEFT));
 
-    private void updateSnakePosition() {
-        int newHeadX = masterSnake.getHeadCoord().getX();
-        int newHeadY = masterSnake.getHeadCoord().getY();
-        log.debug("direction = " + masterSnake.getDirection());
-
-        SnakeDirection newDirection = masterSnake.getDirection();
-        // check if snake tries to reverse
-        newDirection = (lastDirection == SnakeDirection.UP && newDirection == SnakeDirection.DOWN) ?
-                lastDirection : newDirection;
-        newDirection = (lastDirection == SnakeDirection.DOWN && newDirection == SnakeDirection.UP) ?
-                lastDirection : newDirection;
-        newDirection = (lastDirection == SnakeDirection.LEFT && newDirection == SnakeDirection.RIGHT) ?
-                lastDirection : newDirection;
-        newDirection = (lastDirection == SnakeDirection.RIGHT && newDirection == SnakeDirection.LEFT) ?
-                lastDirection : newDirection;
-        switch (newDirection) {
-            case UP -> {
-                newHeadY = (newHeadY - 1 + ROWS_COUNT) % ROWS_COUNT;
-            }
-            case DOWN -> {
-                newHeadY = (newHeadY + 1 + ROWS_COUNT) % ROWS_COUNT;
-            }
-            case RIGHT -> {
-                newHeadX = (newHeadX + 1 + COLUMN_COUNT) % COLUMN_COUNT;
-            }
-            case LEFT -> {
-                newHeadX = (newHeadX - 1 + COLUMN_COUNT) % COLUMN_COUNT;
-            }
-        }
-        lastDirection = newDirection;
-        masterSnake.setPosition(new Coordinates(newHeadX, newHeadY));
     }
 
     private void addNewFood(Coordinates foodCoord) {
@@ -92,7 +67,17 @@ public class Game {
     }
 
     public void update() {
-        updateSnakePosition();
+        if (!masterSnake.isDead()) {
+            masterSnake.updatePosition();
+        }
+        Iterator<Snake> iter = snakes.iterator();
+        while (iter.hasNext()) {
+            Snake snake = iter.next();
+            snake.updatePosition();
+            if (snake.isDead()) {
+                iter.remove();
+            }
+        }
         updateFood();
     }
 

@@ -25,9 +25,10 @@ public class MainMenuController {
             Stage newGameStage = (Stage) newGameButton.getScene().getWindow();
             newGameStage.setScene(new Scene(gameList));
         } catch (IOException e) {
+            e.printStackTrace();
             Alert canNotStartGameAlert = new Alert(Alert.AlertType.ERROR);
             canNotStartGameAlert.setTitle("something wrong :c");
-            canNotStartGameAlert.setContentText("sorry, can not create game... " + e);
+            canNotStartGameAlert.setContentText("sorry, can not create game... ");
             canNotStartGameAlert.show();
         }
 

@@ -7,12 +7,13 @@ public class Snake {
     private SnakeDirection direction;
     private final LinkedList<Coordinates> coordinates;
     private final Cell[][] cells;
+    private boolean isDead = false;
 
-    public Snake(Cell[][] cells,Coordinates initCoord, SnakeDirection initDirect) {
+    public Snake(Cell[][] field, Coordinates initCoord, SnakeDirection initDirect) {
         coordinates = new LinkedList<>();
         coordinates.add(initCoord);
         direction = initDirect;
-        this.cells = cells;
+        this.cells = field;
         switch (direction) {
             case UP -> {
                 coordinates.add(new Coordinates(initCoord.getX(), initCoord.getY() - 1));
@@ -32,9 +33,9 @@ public class Snake {
             }
         }
         for (Coordinates coord : coordinates) {
-            cells[coord.getX()][coord.getY()].setState(CellState.SNAKE);
+            field[coord.getX()][coord.getY()].setState(CellState.SNAKE);
         }
-
+        lastDirection = initDirect;
     }
 
     public SnakeDirection getDirection() {
@@ -69,10 +70,16 @@ public class Snake {
                 coordinates.removeLast();
             }
             case SNAKE -> {
-                System.exit(0); // todo gameover
+                deleteFromField();
+                isDead = true;
             }
         }
+    }
 
+    private void deleteFromField() {
+        for (Coordinates coord : coordinates) {
+            cells[coord.getX()][coord.getY()].setState(CellState.EMPTY);
+        }
     }
 
     public Coordinates getTailCoord() {
@@ -86,4 +93,49 @@ public class Snake {
     public LinkedList<Coordinates> getCoord() {
         return coordinates;
     }
+
+    private SnakeDirection lastDirection;
+
+    public void updatePosition() {
+        if (isDead) {
+            return;
+        }
+        int COLUMN_COUNT = cells.length;
+        int ROWS_COUNT = cells[0].length;
+        int newHeadX = getHeadCoord().getX();
+        int newHeadY = getHeadCoord().getY();
+        System.out.println("direction = " + getDirection());
+
+        SnakeDirection newDirection = getDirection();
+        // check if snake tries to reverse
+        newDirection = (lastDirection == SnakeDirection.UP && newDirection == SnakeDirection.DOWN) ?
+                lastDirection : newDirection;
+        newDirection = (lastDirection == SnakeDirection.DOWN && newDirection == SnakeDirection.UP) ?
+                lastDirection : newDirection;
+        newDirection = (lastDirection == SnakeDirection.LEFT && newDirection == SnakeDirection.RIGHT) ?
+                lastDirection : newDirection;
+        newDirection = (lastDirection == SnakeDirection.RIGHT && newDirection == SnakeDirection.LEFT) ?
+                lastDirection : newDirection;
+        switch (newDirection) {
+            case UP -> {
+                newHeadY = (newHeadY - 1 + ROWS_COUNT) % ROWS_COUNT;
+            }
+            case DOWN -> {
+                newHeadY = (newHeadY + 1 + ROWS_COUNT) % ROWS_COUNT;
+            }
+            case RIGHT -> {
+                newHeadX = (newHeadX + 1 + COLUMN_COUNT) % COLUMN_COUNT;
+            }
+            case LEFT -> {
+                newHeadX = (newHeadX - 1 + COLUMN_COUNT) % COLUMN_COUNT;
+            }
+        }
+        lastDirection = newDirection;
+        setPosition(new Coordinates(newHeadX, newHeadY));
+    }
+
+    public boolean isDead() {
+        return isDead;
+    }
 }
+

@@ -27,7 +27,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.nsu.ccfit.kokunina.game.CellState;
 import ru.nsu.ccfit.kokunina.game.Game;
+import ru.nsu.ccfit.kokunina.game.GameConfig;
 import ru.nsu.ccfit.kokunina.game.SnakeDirection;
+import ru.nsu.ccfit.kokunina.snakes.SnakesProto;
 
 import java.io.IOException;
 import java.net.URL;
@@ -43,11 +45,12 @@ public class GameController implements Initializable {
     public GridPane gameField;
 
     private Game game;
+    private Timeline timeline;
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-
-        game = new Game();
+        GameConfig gameConfig = readConfig();
+        game = new Game(gameConfig);
         gameField.setBackground(new Background(new BackgroundFill(Color.BLACK, CornerRadii.EMPTY, Insets.EMPTY)));
         // connect model & view
         masterName.textProperty().bind(game.masterNameProperty());
@@ -61,7 +64,6 @@ public class GameController implements Initializable {
             for (int j = 0; j < columns; j++) {
                 Rectangle cell = new Rectangle(CELL_SIZE, CELL_SIZE);
                 gameField.add(cell, i, j);
-                GridPane.setMargin(cell, new Insets(0));
                 ObjectProperty<CellState> state = new SimpleObjectProperty<>(CellState.EMPTY);
                 state.addListener((observable, oldState, newState) -> {
                     switch (newState) {
@@ -73,11 +75,16 @@ public class GameController implements Initializable {
                 state.bind(game.CellStateProperty(i, j));
             }
         }
-        Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(0.1), e -> {
+        timeline = new Timeline(new KeyFrame(Duration.seconds(0.1), e -> {
             game.update();
         }));
         timeline.setCycleCount(Timeline.INDEFINITE);
         timeline.play();
+    }
+
+    private GameConfig readConfig() {
+        SnakesProto.GameConfig defaultConfig = SnakesProto.GameConfig.newBuilder().build();
+        return new GameConfig(defaultConfig);
     }
 
     @FXML
@@ -93,6 +100,7 @@ public class GameController implements Initializable {
 
     public void handleExitGameButton(ActionEvent actionEvent) throws IOException {
         // go to main screen
+        timeline.stop();
         Parent mainMenu = FXMLLoader.load(getClass().getClassLoader().getResource("main_menu.fxml"));
         Stage currentStage = (Stage) gameField.getScene().getWindow();
         currentStage.setScene(new Scene(mainMenu));
