@@ -4,6 +4,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
@@ -17,16 +18,32 @@ public class MainMenuController {
     public Button newGameButton;
     public Button connectGameButton;
 
-    public void startNewGame() throws IOException {
+    public void startNewGame() {
         log.debug("startNewGame button pressed");
-        Parent gameList = FXMLLoader.load(getClass().getClassLoader().getResource("game.fxml"));
-        Stage newGameStage = (Stage) newGameButton.getScene().getWindow();
-        newGameStage.setScene(new Scene(gameList));
+        try {
+            Parent gameList = FXMLLoader.load(getClass().getClassLoader().getResource("game.fxml"));
+            Stage newGameStage = (Stage) newGameButton.getScene().getWindow();
+            newGameStage.setScene(new Scene(gameList));
+        } catch (IOException e) {
+            Alert canNotStartGameAlert = new Alert(Alert.AlertType.ERROR);
+            canNotStartGameAlert.setTitle("something wrong :c");
+            canNotStartGameAlert.setContentText("sorry, can not create game... " + e);
+            canNotStartGameAlert.show();
+        }
+
     }
-    public void connectExistingGame(ActionEvent actionEvent) throws IOException {
+    public void connectExistingGame(ActionEvent actionEvent) {
         log.debug("connectGame button pressed");
-        Parent gameList = FXMLLoader.load(getClass().getClassLoader().getResource("game_list.fxml"));
-        Stage newGameStage = (Stage) connectGameButton.getScene().getWindow();
-        newGameStage.setScene(new Scene(gameList));
+        Parent gameList = null;
+        try {
+            gameList = FXMLLoader.load(getClass().getClassLoader().getResource("game_list.fxml"));
+            Stage newGameStage = (Stage) connectGameButton.getScene().getWindow();
+            newGameStage.setScene(new Scene(gameList));
+        } catch (IOException e) {
+            Alert canNotStartGameAlert = new Alert(Alert.AlertType.ERROR);
+            canNotStartGameAlert.setTitle("something wrong :c");
+            canNotStartGameAlert.setContentText("sorry, can not join game... " + e);
+            canNotStartGameAlert.show();
+        }
     }
 }

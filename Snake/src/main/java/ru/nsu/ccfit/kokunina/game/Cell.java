@@ -18,4 +18,8 @@ public class Cell {
     public void setState(CellState newState) {
         state.setValue(newState);
     }
+
+    public CellState getState() {
+        return state.get();
+    }
 }

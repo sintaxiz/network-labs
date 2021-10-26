@@ -1,20 +1,22 @@
 package ru.nsu.ccfit.kokunina.game;
 
-import ru.nsu.ccfit.kokunina.game.Cell;
-
 public class Field {
     final private Cell[][] field;
+    final private int width;
+    final private int height;
 
     public Field(int width, int height) {
         field = new Cell[width][height];
+        this.width = width;
+        this.height = height;
     }
 
     public int getWidth() {
-        return field.length;
+        return width;
     }
 
     public int getHeight() {
-        return field[0].length;
+        return height;
     }
 
     public Cell getCell(int x, int y) {
