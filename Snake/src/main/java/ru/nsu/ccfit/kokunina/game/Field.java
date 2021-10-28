@@ -1,14 +1,20 @@
 package ru.nsu.ccfit.kokunina.game;
 
 public class Field {
-    final private Cell[][] field;
-    final private int width;
-    final private int height;
+    final private Cell[][] cells;
+    private final int width;
+    private final int height;
+
 
     public Field(int width, int height) {
-        field = new Cell[width][height];
         this.width = width;
         this.height = height;
+        cells = new Cell[height][width];
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                cells[i][j] = new Cell();
+            }
+        }
     }
 
     public int getWidth() {
@@ -19,7 +25,7 @@ public class Field {
         return height;
     }
 
-    public Cell getCell(int x, int y) {
-        return field[x][y];
+    public Cell getCell(int row, int column) {
+        return cells[row][column];
     }
 }

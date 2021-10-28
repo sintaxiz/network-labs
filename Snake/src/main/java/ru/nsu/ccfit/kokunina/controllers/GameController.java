@@ -22,7 +22,6 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.util.Duration;
-import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.nsu.ccfit.kokunina.game.CellState;
@@ -33,10 +32,13 @@ import ru.nsu.ccfit.kokunina.snakes.SnakesProto;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.ResourceBundle;
 
 public class GameController implements Initializable {
     private final Logger log = LoggerFactory.getLogger(GameController.class);
+
+    private final String PLAYER_NAME = "Danil";
 
     public ListView<Text> playerList;
     public Text masterName;
@@ -46,24 +48,24 @@ public class GameController implements Initializable {
 
     private Game game;
     private Timeline timeline;
-
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         GameConfig gameConfig = readConfig();
+        masterName.setText(gameConfig.getPlayerName());
+        foodCount.setText(gameConfig.getFoodStatic() + "x" + gameConfig.getFoodPerPlayer());
+
+        // connect model & view
         game = new Game(gameConfig);
         gameField.setBackground(new Background(new BackgroundFill(Color.BLACK, CornerRadii.EMPTY, Insets.EMPTY)));
-        // connect model & view
-        masterName.textProperty().bind(game.masterNameProperty());
-        foodCount.textProperty().bind(game.foodCountProperty());
-        Pair<Integer, Integer> gridSize = game.getGameFieldSize();
-        int rows = gridSize.getKey();
-        int columns = gridSize.getValue();
+        int rows = gameConfig.getHeight();
+        int columns = gameConfig.getWidth();
         final int CELL_SIZE = 400 / rows;
-        fieldSize.setText(rows + "x" + columns);
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < columns; j++) {
-                Rectangle cell = new Rectangle(CELL_SIZE, CELL_SIZE);
-                gameField.add(cell, i, j);
+        fieldSize.setText(columns + "x" + rows);
+        ArrayList<ObjectProperty<CellState>> states = new ArrayList<>();
+        for (int row = 0; row < rows; row++) {
+            for (int column = 0; column < columns; column++) {
+                Rectangle cell = new Rectangle(CELL_SIZE, CELL_SIZE) ;
+                gameField.add(cell, column, row);
                 ObjectProperty<CellState> state = new SimpleObjectProperty<>(CellState.EMPTY);
                 state.addListener((observable, oldState, newState) -> {
                     switch (newState) {
@@ -72,7 +74,8 @@ public class GameController implements Initializable {
                         case EMPTY -> cell.setFill(Color.BLACK);
                     }
                 });
-                state.bind(game.CellStateProperty(i, j));
+                state.bind(game.gameFieldCellStateProperty(row, column));
+                states.add(state);
             }
         }
         timeline = new Timeline(new KeyFrame(Duration.seconds(0.1), e -> {
@@ -83,13 +86,12 @@ public class GameController implements Initializable {
     }
 
     private GameConfig readConfig() {
-        SnakesProto.GameConfig defaultConfig = SnakesProto.GameConfig.newBuilder().build();
-        return new GameConfig(defaultConfig);
+        SnakesProto.GameConfig defaultConfig = SnakesProto.GameConfig.newBuilder().setHeight(30).build();
+        return new GameConfig(PLAYER_NAME, defaultConfig);
     }
 
     @FXML
     private void handleKeyPressed(KeyEvent keyEvent) {
-        System.out.println("keypressed");
         switch (keyEvent.getCode()) {
             case W -> game.setMasterSnakeDirection(SnakeDirection.UP);
             case S -> game.setMasterSnakeDirection(SnakeDirection.DOWN);

@@ -32,7 +32,6 @@ public class MulticastSender implements Runnable {
     @Override
     public void run() {
         try {
-
             DatagramSocket socket = new MulticastSocket(PORT);
             while (!Thread.interrupted()) {
                 socket.send(new DatagramPacket(message, message.length, multicastAddress, PORT));

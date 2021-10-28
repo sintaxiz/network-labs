@@ -18,6 +18,7 @@ public class App extends Application {
         primaryStage.setScene(new Scene(mainMenu));
         primaryStage.setTitle(gameTitle);
         primaryStage.setOnCloseRequest(this::close);
+        primaryStage.setResizable(false);
         primaryStage.show();
     }
     public void close(WindowEvent event) {

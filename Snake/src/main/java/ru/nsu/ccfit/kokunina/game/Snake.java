@@ -6,14 +6,16 @@ public class Snake {
 
     private SnakeDirection direction;
     private final LinkedList<Coordinates> coordinates;
-    private final Cell[][] cells;
+    private final Field field;
     private boolean isDead = false;
+    private final Game game;
 
-    public Snake(Cell[][] field, Coordinates initCoord, SnakeDirection initDirect) {
+    public Snake(Field field, Coordinates initCoord, SnakeDirection initDirect, Game game) {
+        this.game = game;
         coordinates = new LinkedList<>();
         coordinates.add(initCoord);
         direction = initDirect;
-        this.cells = field;
+        this.field = field;
         switch (direction) {
             case UP -> {
                 coordinates.add(new Coordinates(initCoord.getX(), initCoord.getY() - 1));
@@ -33,7 +35,7 @@ public class Snake {
             }
         }
         for (Coordinates coord : coordinates) {
-            field[coord.getX()][coord.getY()].setState(CellState.SNAKE);
+            field.getCell(coord.getY(), coord.getX()).setState(CellState.SNAKE);
         }
         lastDirection = initDirect;
     }
@@ -57,15 +59,15 @@ public class Snake {
     public void setPosition(Coordinates position) {
         int newX = position.getX();
         int newY = position.getY();
-        switch (cells[newX][newY].getState()) {
+        switch (field.getCell(newY, newX).getState()) {
             case FOOD -> {
                 coordinates.addFirst(position);
-                cells[position.getX()][position.getY()].setState(CellState.SNAKE);
+                game.eatFood(position);
             }
             case EMPTY -> {
                 Coordinates tailCoord = getTailCoord();
-                cells[tailCoord.getX()][tailCoord.getY()].setState(CellState.EMPTY);
-                cells[position.getX()][position.getY()].setState(CellState.SNAKE);
+                field.getCell(tailCoord.getY(), tailCoord.getX()).setState(CellState.EMPTY);
+                field.getCell(position.getY(), position.getX()).setState(CellState.SNAKE);
                 coordinates.addFirst(position);
                 coordinates.removeLast();
             }
@@ -78,7 +80,7 @@ public class Snake {
 
     private void deleteFromField() {
         for (Coordinates coord : coordinates) {
-            cells[coord.getX()][coord.getY()].setState(CellState.EMPTY);
+            field.getCell(coord.getY(), coord.getX()).setState(CellState.EMPTY);
         }
     }
 
@@ -100,11 +102,10 @@ public class Snake {
         if (isDead) {
             return;
         }
-        int COLUMN_COUNT = cells.length;
-        int ROWS_COUNT = cells[0].length;
+        int ROWS_COUNT = field.getHeight();
+        int COLUMN_COUNT = field.getWidth();
         int newHeadX = getHeadCoord().getX();
         int newHeadY = getHeadCoord().getY();
-        System.out.println("direction = " + getDirection());
 
         SnakeDirection newDirection = getDirection();
         // check if snake tries to reverse

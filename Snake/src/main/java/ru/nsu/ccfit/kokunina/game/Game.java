@@ -1,9 +1,6 @@
 package ru.nsu.ccfit.kokunina.game;
 
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
 import javafx.beans.value.ObservableValue;
-import javafx.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.nsu.ccfit.kokunina.multicast.MulticastSender;
@@ -16,28 +13,28 @@ import java.util.Random;
 public class Game {
     private final static Logger log = LoggerFactory.getLogger(Game.class);
 
-    private final StringProperty foodCount;
-    private final StringProperty masterName;
-    private final Cell[][] cells;
+    // Game objects
+    private Field gameField;
     private final Snake masterSnake;
     private final ArrayList<Snake> snakes;
+    private final FoodController foodController;
 
-    private final int COLUMN_COUNT;
-    private final int ROWS_COUNT;
+    private double foodPerPlayer;
+    private int staticFoodCount;
+    private int currentFoodCount = 0;
+
 
     public Game(GameConfig config) {
-        foodCount = new SimpleStringProperty("300");
-        masterName = new SimpleStringProperty("Danil");
+
+        staticFoodCount = config.getFoodStatic();
+        foodPerPlayer = config.getFoodPerPlayer();
         snakes = new ArrayList<>();
-        COLUMN_COUNT = config.getWidth();
-        ROWS_COUNT = config.getHeight();
-        cells = new Cell[COLUMN_COUNT][ROWS_COUNT];
-        for (int i = 0; i < COLUMN_COUNT; i++) {
-            for (int j = 0; j < ROWS_COUNT; j++) {
-                cells[i][j] = new Cell();
-            }
-        }
-        masterSnake = new Snake(cells, new Coordinates(0, 0), SnakeDirection.LEFT);
+        gameField = new Field(config.getWidth(), config.getHeight());
+        foodController = new FoodController(gameField, config.getFoodStatic(), config.getFoodPerPlayer());
+        masterSnake = new Snake(gameField, new Coordinates(11, 11), SnakeDirection.LEFT, this);
+        snakes.add(new Snake(gameField, new Coordinates(10, 10), SnakeDirection.LEFT, this));
+
+        // network connection. i think it should be another func and not here
         try {
             Thread sender = new Thread(new MulticastSender());
             sender.start();
@@ -45,25 +42,6 @@ public class Game {
             System.out.println("Can not start game");
             e.printStackTrace();
         }
-
-        snakes.add(new Snake(cells, new Coordinates(10, 10), SnakeDirection.LEFT));
-        snakes.add(new Snake(cells, new Coordinates(10, 11), SnakeDirection.LEFT));
-        snakes.add(new Snake(cells, new Coordinates(10, 12), SnakeDirection.LEFT));
-
-    }
-
-    private void addNewFood(Coordinates foodCoord) {
-        int x = foodCoord.getX();
-        int y = foodCoord.getY();
-        if (cells[x][y].getState() == CellState.EMPTY) {
-            cells[x][y].setState(CellState.FOOD);
-        }
-    }
-
-    private void updateFood() {
-        int randomX = new Random().nextInt(COLUMN_COUNT);
-        int randomY = new Random().nextInt(ROWS_COUNT);
-        addNewFood(new Coordinates(randomX,randomY));
     }
 
     public void update() {
@@ -78,27 +56,18 @@ public class Game {
                 iter.remove();
             }
         }
-        updateFood();
+        foodController.update(snakes.size());
     }
 
     public void setMasterSnakeDirection(SnakeDirection direction) {
         masterSnake.setDirection(direction);
     }
 
-    public Pair<Integer, Integer> getGameFieldSize() {
-        return new Pair<>(COLUMN_COUNT, ROWS_COUNT);
+    public ObservableValue<CellState> gameFieldCellStateProperty(int row, int column) {
+        return gameField.getCell(row, column).getCellStateProperty();
     }
 
-    public StringProperty masterNameProperty() {
-        return masterName;
+    public void eatFood(Coordinates position) {
+        foodController.eatFood(position);
     }
-
-    public StringProperty foodCountProperty() {
-        return foodCount;
-    }
-
-    public ObservableValue<CellState> CellStateProperty(int x, int y) {
-        return cells[x][y].getCellStateProperty();
-    }
-
 }
