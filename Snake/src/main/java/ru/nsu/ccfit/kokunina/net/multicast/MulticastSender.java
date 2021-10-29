@@ -1,4 +1,4 @@
-package ru.nsu.ccfit.kokunina.multicast;
+package ru.nsu.ccfit.kokunina.net.multicast;
 
 import ru.nsu.ccfit.kokunina.snakes.SnakesProto;
 

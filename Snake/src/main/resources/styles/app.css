@@ -3,6 +3,7 @@
     -fx-background-color: #208c71;
     -fx-text-fill: white;
     -fx-font-size: 18;
+    -fx-padding: 10 10 10 10;
 }
 
 Text {

@@ -31,6 +31,7 @@ import ru.nsu.ccfit.kokunina.game.SnakeDirection;
 import ru.nsu.ccfit.kokunina.snakes.SnakesProto;
 
 import java.io.IOException;
+import java.net.SocketException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.ResourceBundle;
@@ -52,10 +53,14 @@ public class GameController implements Initializable {
     public void initialize(URL url, ResourceBundle rb) {
         GameConfig gameConfig = readConfig();
         masterName.setText(gameConfig.getPlayerName());
-        foodCount.setText(gameConfig.getFoodStatic() + "x" + gameConfig.getFoodPerPlayer());
+        foodCount.setText(gameConfig.getFoodStatic() + "+" + gameConfig.getFoodPerPlayer());
 
         // connect model & view
-        game = new Game(gameConfig);
+        try {
+            game = new Game(gameConfig);
+        } catch (SocketException e) {
+            throw new RuntimeException("Can not start game", e);
+        }
         gameField.setBackground(new Background(new BackgroundFill(Color.BLACK, CornerRadii.EMPTY, Insets.EMPTY)));
         int rows = gameConfig.getHeight();
         int columns = gameConfig.getWidth();

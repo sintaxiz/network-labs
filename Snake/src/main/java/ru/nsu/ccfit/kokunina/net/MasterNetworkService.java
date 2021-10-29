@@ -1,14 +1,14 @@
-package ru.nsu.ccfit.kokunina.multicast;
+package ru.nsu.ccfit.kokunina.net;
 
 import java.net.DatagramSocket;
 import java.net.SocketException;
 
-public class MasterServer extends Thread {
+public class MasterNetworkService extends Thread {
     // listening socket for messages from other players
     private DatagramSocket socket;
     private final int PORT = 8888;
 
-    public MasterServer() throws SocketException {
+    public MasterNetworkService() throws SocketException {
         socket = new DatagramSocket(PORT);
     }
 

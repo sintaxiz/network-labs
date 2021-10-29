@@ -3,12 +3,13 @@ package ru.nsu.ccfit.kokunina.game;
 import javafx.beans.value.ObservableValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.nsu.ccfit.kokunina.multicast.MulticastSender;
+import ru.nsu.ccfit.kokunina.net.MasterNetworkService;
+import ru.nsu.ccfit.kokunina.net.multicast.MulticastSender;
 
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.Random;
 
 public class Game {
     private final static Logger log = LoggerFactory.getLogger(Game.class);
@@ -19,15 +20,13 @@ public class Game {
     private final ArrayList<Snake> snakes;
     private final FoodController foodController;
 
-    private double foodPerPlayer;
-    private int staticFoodCount;
-    private int currentFoodCount = 0;
+    // Network objects
+    private final MasterNetworkService masterNetworkService;
 
+    public Game(GameConfig config) throws SocketException {
 
-    public Game(GameConfig config) {
+        masterNetworkService = new MasterNetworkService();
 
-        staticFoodCount = config.getFoodStatic();
-        foodPerPlayer = config.getFoodPerPlayer();
         snakes = new ArrayList<>();
         gameField = new Field(config.getWidth(), config.getHeight());
         foodController = new FoodController(gameField, config.getFoodStatic(), config.getFoodPerPlayer());
@@ -45,6 +44,8 @@ public class Game {
     }
 
     public void update() {
+        updateNetworkData();
+
         if (!masterSnake.isDead()) {
             masterSnake.updatePosition();
         }
@@ -57,6 +58,21 @@ public class Game {
             }
         }
         foodController.update(snakes.size());
+
+        notifyNetwork();
+    }
+
+    private void notifyNetwork() {
+        //masterNetworkService.sendGameState(gameState);
+    }
+
+    private void updateNetworkData() {
+       /* ArrayList<Player> players = masterNetworkService.getAllPlayers();
+        for (Player player : players) {
+            if (!player.isOnline()) {
+                //snakes[player]
+            }
+        }*/
     }
 
     public void setMasterSnakeDirection(SnakeDirection direction) {

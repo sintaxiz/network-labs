@@ -1,9 +1,10 @@
-package ru.nsu.ccfit.kokunina.multicast;
+package ru.nsu.ccfit.kokunina.net.multicast;
 
 import javafx.beans.property.SimpleListProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import ru.nsu.ccfit.kokunina.controllers.GameListItem;
 import ru.nsu.ccfit.kokunina.snakes.SnakesProto;
 
 import java.io.IOException;
@@ -12,7 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public class GameList {
-    private SimpleListProperty<String> games;
+    private final SimpleListProperty<GameListItem> games;
 
     private MulticastSocket socket;
     private int BUFFER_SIZE = 256;
@@ -40,14 +41,14 @@ public class GameList {
 
             String gameIp = msg.getAddress().toString();
             if (!games.get().contains(gameIp)) {
-                games.get().add(gameIp);
+                games.get().add(new GameListItem(gameIp));
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public ObservableValue<ObservableList<String>> gamesProperty() {
+    public ObservableValue<ObservableList<GameListItem>> gamesProperty() {
         return games;
     }
 }
