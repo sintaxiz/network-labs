@@ -1,5 +1,7 @@
 package ru.nsu.ccfit.kokunina.net.multicast;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.nsu.ccfit.kokunina.snakes.SnakesProto;
 
 import java.io.IOException;
@@ -7,7 +9,9 @@ import java.net.*;
 
 public class MulticastSender implements Runnable {
 
-    final int PORT = 4000;
+    private static final Logger log = LoggerFactory.getLogger(MulticastSender.class);
+
+    final int PORT = 8888;
     InetAddress multicastAddress;
     byte[] message;
 
@@ -26,7 +30,10 @@ public class MulticastSender implements Runnable {
                 .setPlayers(players)
                 .setConfig(SnakesProto.GameConfig.newBuilder().build())
                 .build();
-        message = announcementMsg.toByteArray();
+        SnakesProto.GameMessage gameMessage = SnakesProto.GameMessage.newBuilder()
+                .setAnnouncement(announcementMsg)
+                .setMsgSeq(1).build();
+        message = gameMessage.toByteArray();
     }
 
     @Override
@@ -35,6 +42,7 @@ public class MulticastSender implements Runnable {
             DatagramSocket socket = new MulticastSocket(PORT);
             while (!Thread.interrupted()) {
                 socket.send(new DatagramPacket(message, message.length, multicastAddress, PORT));
+                log.debug("sent: " + SnakesProto.GameMessage.parseFrom(message));
                 Thread.sleep(1000);
             }
         } catch (IOException | InterruptedException e) {

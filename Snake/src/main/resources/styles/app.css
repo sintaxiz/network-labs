@@ -1,6 +1,6 @@
 .root {
     -fx-font-family: "Lucida Console";
-    -fx-background-color: #208c71;
+    -fx-background-color: #d37506;
     -fx-text-fill: white;
     -fx-font-size: 18;
     -fx-padding: 10 10 10 10;
@@ -19,13 +19,13 @@ Label {
 }
 
 .button {
-    -fx-background-color:  #6c6c6c;
+    -fx-background-color:  #d3d3cb;
     -fx-background-radius: 30;
-    -fx-text-fill: white;
+    -fx-text-fill: black;
 }
 
 .list-view {
-    -fx-background-color: #208c71;
+    -fx-background-color: #d37506;
     -fx-text-fill: black;
 }
 

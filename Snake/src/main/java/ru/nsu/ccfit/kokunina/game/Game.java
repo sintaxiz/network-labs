@@ -4,10 +4,8 @@ import javafx.beans.value.ObservableValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.nsu.ccfit.kokunina.net.MasterNetworkService;
-import ru.nsu.ccfit.kokunina.net.multicast.MulticastSender;
 
 import java.net.SocketException;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -15,8 +13,8 @@ public class Game {
     private final static Logger log = LoggerFactory.getLogger(Game.class);
 
     // Game objects
-    private Field gameField;
-    private final Snake masterSnake;
+    private Snake masterSnake;
+    private final Field gameField;
     private final ArrayList<Snake> snakes;
     private final FoodController foodController;
 
@@ -24,23 +22,24 @@ public class Game {
     private final MasterNetworkService masterNetworkService;
 
     public Game(GameConfig config) throws SocketException {
-
         masterNetworkService = new MasterNetworkService();
-
         snakes = new ArrayList<>();
         gameField = new Field(config.getWidth(), config.getHeight());
         foodController = new FoodController(gameField, config.getFoodStatic(), config.getFoodPerPlayer());
+    }
+
+    /**
+     * Starts network service and add snake to the field
+     * Use in bundle with {@link ru.nsu.ccfit.kokunina.game.Game#stop() stop} method to free resources
+     */
+    public void start() {
+        masterNetworkService.start();
         masterSnake = new Snake(gameField, new Coordinates(11, 11), SnakeDirection.LEFT, this);
         snakes.add(new Snake(gameField, new Coordinates(10, 10), SnakeDirection.LEFT, this));
+    }
 
-        // network connection. i think it should be another func and not here
-        try {
-            Thread sender = new Thread(new MulticastSender());
-            sender.start();
-        } catch (UnknownHostException e) {
-            System.out.println("Can not start game");
-            e.printStackTrace();
-        }
+    public void stop() {
+        masterNetworkService.interrupt();
     }
 
     public void update() {

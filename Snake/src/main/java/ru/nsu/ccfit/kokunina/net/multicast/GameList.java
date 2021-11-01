@@ -17,7 +17,7 @@ public class GameList {
 
     private MulticastSocket socket;
     private int BUFFER_SIZE = 256;
-    private int SOCKET_TIMEOUT = 500;
+    private int SOCKET_TIMEOUT = 4000;
     public GameList() throws IOException {
         games = new SimpleListProperty<>(FXCollections.observableList(new ArrayList<>()));
         socket = new MulticastSocket(4000);
@@ -36,8 +36,8 @@ public class GameList {
             socket.receive(msg);
             byte[] buf2 = Arrays.copyOf(msg.getData(), msg.getLength());
             System.out.println(Arrays.toString(buf2));
-            System.out.println("receive: " + SnakesProto.GameMessage.AnnouncementMsg.parseFrom(buf2));
-            SnakesProto.GameMessage.AnnouncementMsg announce = SnakesProto.GameMessage.AnnouncementMsg.parseFrom(buf2);
+            System.out.println("receive: " + SnakesProto.GameMessage.parseFrom(buf2));
+            SnakesProto.GameMessage gameMessage = SnakesProto.GameMessage.parseFrom(buf2);
 
             String gameIp = msg.getAddress().toString();
             if (!games.get().contains(gameIp)) {

@@ -64,6 +64,7 @@ public class FoodController {
                 return;
             } catch (CellNotEmptyException e) {
                 e.printStackTrace();
+                break;
             }
         }
     }
