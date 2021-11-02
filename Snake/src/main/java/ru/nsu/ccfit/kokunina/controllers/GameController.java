@@ -28,11 +28,12 @@ import ru.nsu.ccfit.kokunina.game.CellState;
 import ru.nsu.ccfit.kokunina.game.Game;
 import ru.nsu.ccfit.kokunina.game.GameConfig;
 import ru.nsu.ccfit.kokunina.game.SnakeDirection;
+import ru.nsu.ccfit.kokunina.net.MasterNetworkService;
+import ru.nsu.ccfit.kokunina.net.NetworkService;
 import ru.nsu.ccfit.kokunina.net.multicast.MulticastSender;
 import ru.nsu.ccfit.kokunina.snakes.SnakesProto;
 
 import java.io.IOException;
-import java.net.SocketException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -54,56 +55,12 @@ public class GameController implements Initializable {
     public GridPane gameField;
 
     private Game game;
-    private Thread networkThread;
+    private MasterNetworkService networkService;
     private Timeline timeline;
+
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        GameConfig gameConfig = readConfig();
-        masterName.setText(gameConfig.getPlayerName());
-        foodCount.setText(gameConfig.getFoodStatic() + "+" + gameConfig.getFoodPerPlayer());
 
-        // connect model & view
-        try {
-            game = new Game(gameConfig);
-            game.start();
-        } catch (SocketException e) {
-            throw new RuntimeException("Can not start game", e);
-        }
-        gameField.setBackground(new Background(new BackgroundFill(Color.valueOf(CELL_COLOR), CornerRadii.EMPTY, Insets.EMPTY)));
-        int rows = gameConfig.getHeight();
-        int columns = gameConfig.getWidth();
-        final int CELL_SIZE = 400 / rows;
-        fieldSize.setText(columns + "x" + rows);
-        ArrayList<ObjectProperty<CellState>> states = new ArrayList<>();
-        for (int row = 0; row < rows; row++) {
-            for (int column = 0; column < columns; column++) {
-                Rectangle cell = new Rectangle(CELL_SIZE, CELL_SIZE, Color.valueOf(CELL_COLOR)) ;
-                gameField.add(cell, column, row);
-                ObjectProperty<CellState> state = new SimpleObjectProperty<>(CellState.EMPTY);
-                state.addListener((observable, oldState, newState) -> {
-                    switch (newState) {
-                        case SNAKE -> cell.setFill(Color.valueOf(SNAKE_COLOR));
-                        case FOOD -> cell.setFill(Color.valueOf(FOOD_COLOR));
-                        case EMPTY -> cell.setFill(Color.valueOf(CELL_COLOR));
-                    }
-                });
-                state.bind(game.gameFieldCellStateProperty(row, column));
-                states.add(state);
-            }
-        }
-        timeline = new Timeline(new KeyFrame(Duration.seconds(UPDATE_TIME_SEC), e -> {
-            game.update();
-        }));
-        timeline.setCycleCount(Timeline.INDEFINITE);
-        timeline.play();
-
-        try {
-            networkThread = new Thread(new MulticastSender());
-            networkThread.start();
-        } catch (UnknownHostException e) {
-            System.out.println("Can not start game");
-            e.printStackTrace();
-        }
     }
 
     private GameConfig readConfig() {
@@ -124,10 +81,56 @@ public class GameController implements Initializable {
     public void handleExitGameButton(ActionEvent actionEvent) throws IOException {
         // go to main screen
         timeline.stop();
-        networkThread.interrupt();
-        game.stop();
+        networkService.interrupt();
         Parent mainMenu = FXMLLoader.load(getClass().getClassLoader().getResource("main_menu.fxml"));
         Stage currentStage = (Stage) gameField.getScene().getWindow();
         currentStage.setScene(new Scene(mainMenu));
+    }
+
+    public void startGame() {
+        GameConfig gameConfig = readConfig();
+        masterName.setText(gameConfig.getPlayerName());
+        foodCount.setText(gameConfig.getFoodStatic() + "+" + gameConfig.getFoodPerPlayer());
+
+        // connect model & view
+        try {
+            networkService = new MasterNetworkService();
+            networkService.start();
+            game = new Game(gameConfig, networkService);
+            game.start();
+        } catch (IOException e) {
+            throw new RuntimeException("Can not start game", e);
+        }
+        gameField.setBackground(new Background(new BackgroundFill(Color.valueOf(CELL_COLOR), CornerRadii.EMPTY, Insets.EMPTY)));
+        int rows = gameConfig.getHeight();
+        int columns = gameConfig.getWidth();
+        final int CELL_SIZE = 400 / rows;
+        fieldSize.setText(columns + "x" + rows);
+        ArrayList<ObjectProperty<CellState>> states = new ArrayList<>();
+        for (int row = 0; row < rows; row++) {
+            for (int column = 0; column < columns; column++) {
+                Rectangle cell = new Rectangle(CELL_SIZE, CELL_SIZE, Color.valueOf(CELL_COLOR));
+                gameField.add(cell, column, row);
+                ObjectProperty<CellState> state = new SimpleObjectProperty<>(CellState.EMPTY);
+                state.addListener((observable, oldState, newState) -> {
+                    switch (newState) {
+                        case SNAKE -> cell.setFill(Color.valueOf(SNAKE_COLOR));
+                        case FOOD -> cell.setFill(Color.valueOf(FOOD_COLOR));
+                        case EMPTY -> cell.setFill(Color.valueOf(CELL_COLOR));
+                    }
+                });
+                state.bind(game.gameFieldCellStateProperty(row, column));
+                states.add(state);
+            }
+        }
+        timeline = new Timeline(new KeyFrame(Duration.seconds(UPDATE_TIME_SEC), e -> {
+            game.update();
+        }));
+        timeline.setCycleCount(Timeline.INDEFINITE);
+        timeline.play();
+
+
+        log.debug("start multicast sending");
+
     }
 }

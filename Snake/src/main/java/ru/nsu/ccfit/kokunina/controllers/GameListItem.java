@@ -1,13 +1,15 @@
 package ru.nsu.ccfit.kokunina.controllers;
 
-public class GameListItem {
-    private final String gameIP;
+import java.net.SocketAddress;
 
-    public GameListItem(String gameIP) {
-        this.gameIP = gameIP;
+public class GameListItem {
+    private final SocketAddress gameAddress;
+
+    public GameListItem(SocketAddress gameAddress) {
+        this.gameAddress = gameAddress;
     }
 
-    public String getIp() {
-        return gameIP;
+    public SocketAddress getGameAddress() {
+        return gameAddress;
     }
 }

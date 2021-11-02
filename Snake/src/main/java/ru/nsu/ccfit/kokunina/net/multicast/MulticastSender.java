@@ -2,51 +2,36 @@ package ru.nsu.ccfit.kokunina.net.multicast;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.nsu.ccfit.kokunina.snakes.SnakesProto;
 
 import java.io.IOException;
 import java.net.*;
 
-public class MulticastSender implements Runnable {
+import static java.lang.Thread.interrupted;
 
+public class MulticastSender implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(MulticastSender.class);
 
-    final int PORT = 8888;
-    InetAddress multicastAddress;
-    byte[] message;
+    private final MulticastSocket out;
+    private final byte[] msg;
+    private final SocketAddress address;
 
-    public MulticastSender() throws UnknownHostException {
-        this.multicastAddress = InetAddress.getByName("230.0.0.0");
-        SnakesProto.GamePlayer me = SnakesProto.GamePlayer.newBuilder()
-                .setName("me")
-                .setId(123)
-                .setIpAddress("1234")
-                .setPort(123)
-                .setRole(SnakesProto.NodeRole.MASTER)
-                .setScore(0)
-                .build();
-        SnakesProto.GamePlayers players = SnakesProto.GamePlayers.newBuilder().addPlayers(me).build();
-        SnakesProto.GameMessage.AnnouncementMsg announcementMsg = SnakesProto.GameMessage.AnnouncementMsg.newBuilder()
-                .setPlayers(players)
-                .setConfig(SnakesProto.GameConfig.newBuilder().build())
-                .build();
-        SnakesProto.GameMessage gameMessage = SnakesProto.GameMessage.newBuilder()
-                .setAnnouncement(announcementMsg)
-                .setMsgSeq(1).build();
-        message = gameMessage.toByteArray();
+    public MulticastSender(MulticastSocket out, byte[] msg, SocketAddress address) throws UnknownHostException {
+        this.out = out;
+        this.msg = msg;
+        this.address = address;
     }
 
     @Override
     public void run() {
         try {
-            DatagramSocket socket = new MulticastSocket(PORT);
-            while (!Thread.interrupted()) {
-                socket.send(new DatagramPacket(message, message.length, multicastAddress, PORT));
-                log.debug("sent: " + SnakesProto.GameMessage.parseFrom(message));
+            while (!interrupted()) {
+                out.send(new DatagramPacket(msg, msg.length, address));
+                log.debug("send announcement to " + address);
                 Thread.sleep(1000);
             }
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }
+
     }
 }

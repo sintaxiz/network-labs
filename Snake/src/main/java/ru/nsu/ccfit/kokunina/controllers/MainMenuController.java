@@ -21,9 +21,13 @@ public class MainMenuController {
     public void startNewGame() {
         log.debug("startNewGame button pressed");
         try {
-            Parent gameList = FXMLLoader.load(getClass().getClassLoader().getResource("game.fxml"));
+            FXMLLoader fxmlLoader = new FXMLLoader();
+            Parent gameList = fxmlLoader.load(getClass().getClassLoader().getResource("game.fxml").openStream());
+            GameController gameController = fxmlLoader.getController();
+            gameController.startGame();
             Stage newGameStage = (Stage) newGameButton.getScene().getWindow();
             newGameStage.setScene(new Scene(gameList));
+
         } catch (IOException e) {
             e.printStackTrace();
             Alert canNotStartGameAlert = new Alert(Alert.AlertType.ERROR);

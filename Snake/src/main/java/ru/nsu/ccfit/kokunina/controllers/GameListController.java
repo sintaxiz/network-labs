@@ -1,7 +1,5 @@
 package ru.nsu.ccfit.kokunina.controllers;
 
-import javafx.animation.Animation;
-import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -9,19 +7,23 @@ import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.stage.Stage;
 import javafx.util.Callback;
-import javafx.util.Duration;
-import ru.nsu.ccfit.kokunina.net.multicast.GameList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import ru.nsu.ccfit.kokunina.net.NormalNetworkService;
+import ru.nsu.ccfit.kokunina.net.multicast.AnnouncementsReceiver;
 
 import java.io.IOException;
 import java.net.*;
 import java.util.ResourceBundle;
 
 public class GameListController implements Initializable {
+    private static final Logger log = LoggerFactory.getLogger(GameListController.class);
 
     @FXML
     public Button backButton;
@@ -29,7 +31,7 @@ public class GameListController implements Initializable {
     @FXML
     private ListView<GameListItem> listView;
 
-    private GameList gameList;
+    private AnnouncementsReceiver gameList;
     private GameListItem selectedGame = null;
 
     private int UPDATE_LIST_PERIOD = 2; // in seconds 
@@ -38,7 +40,8 @@ public class GameListController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         try {
-            gameList = new GameList();
+            gameList = new AnnouncementsReceiver();
+            gameList.start();
         } catch (IOException e) {
             System.out.println("can not create game list");
             e.printStackTrace();
@@ -53,7 +56,7 @@ public class GameListController implements Initializable {
                     protected void updateItem(GameListItem item, boolean empty) {
                         super.updateItem(item, empty);
                         if (item != null) {
-                            setText(item.getIp());
+                            setText(item.getGameAddress().toString());
                         } else {
                             setText("");
                         }
@@ -66,34 +69,41 @@ public class GameListController implements Initializable {
         {
             GameListItem gameItem = listView.getSelectionModel().getSelectedItem();
             if (gameItem != null) {
-                System.out.println("selected: " + gameItem.getIp());
+                System.out.println("selected: " + gameItem.getGameAddress().toString());
                 joinGameButton.setVisible(true);
                 selectedGame = gameItem;
             }
         });
-        timeline = new Timeline(
-                new KeyFrame(Duration.seconds(UPDATE_LIST_PERIOD),
-                        actionEvent -> {
-                            update();
-                        }));
-        timeline.setCycleCount(Animation.INDEFINITE);
-        timeline.play();
-    }
-
-    private void update() {
-        gameList.findAvailableGames();
     }
 
     public void handleBackButton(ActionEvent actionEvent) throws IOException {
-        timeline.stop();
+        gameList.interrupt();
         Parent mainMenu = FXMLLoader.load(getClass().getClassLoader().getResource("main_menu.fxml"));
         Stage currentStage = (Stage) backButton.getScene().getWindow();
         currentStage.setScene(new Scene(mainMenu));
     }
 
     public void handleJoinGameButton(ActionEvent actionEvent) {
-        if (selectedGame != null) {
-            System.out.println("start game: " + selectedGame);
+        try {
+            if (selectedGame != null) {
+                NormalNetworkService normalNetworkService = new NormalNetworkService();
+                normalNetworkService.sendJoin(selectedGame.getGameAddress(), "Dasha");
+                gameList.interrupt();
+                FXMLLoader fxmlLoader = new FXMLLoader();
+                Parent gameList = fxmlLoader.load(getClass().getClassLoader().getResource("game.fxml").openStream());
+                //GameController gameController = fxmlLoader.getController();
+                //gameController.startGame();
+                Stage newGameStage = (Stage) joinGameButton.getScene().getWindow();
+                newGameStage.setScene(new Scene(gameList));
+                System.out.println("start game: " + selectedGame);
+            }
+        } catch (IOException e) {
+            log.error("can not join game: " + e.getMessage());
+            Alert canNotJoinGameAlert = new Alert(Alert.AlertType.ERROR);
+            canNotJoinGameAlert.setTitle("something wrong :c");
+            canNotJoinGameAlert.setContentText("sorry, can not join this game " + selectedGame.getGameAddress());
+            canNotJoinGameAlert.show();
         }
+
     }
 }

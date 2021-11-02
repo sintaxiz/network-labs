@@ -3,6 +3,7 @@ package ru.nsu.ccfit.kokunina.net;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.nsu.ccfit.kokunina.game.SnakeDirection;
+import ru.nsu.ccfit.kokunina.net.multicast.MulticastSender;
 import ru.nsu.ccfit.kokunina.snakes.SnakesProto;
 
 import java.io.IOException;
@@ -16,25 +17,63 @@ public class MasterNetworkService extends Thread implements NetworkService {
     private static final int SOCKET_TIMEOUT = 5000;
 
     // listening socket for messages from other players
-    private DatagramSocket socket;
-    private final int PORT = 8888;
+    private MulticastSocket socket;
     private final Map<SocketAddress, NetworkNode> nodes;
 
-    public MasterNetworkService() throws SocketException {
-        socket = new DatagramSocket(PORT);
+    private final String MULTICAST_ADDRESS =  "239.192.0.4";
+    final int MULTICAST_PORT = 9192;
+    InetAddress multicastAddress;
+    byte[] message;
+
+    public MasterNetworkService() throws IOException {
+        socket = new MulticastSocket();
+
+        //SocketAddress socketAddress = new InetSocketAddress(multicastAddress, MULTICAST_PORT);
+        //socket.joinGroup(socketAddress, NetworkInterface.getByName("lo"));
         socket.setSoTimeout(SOCKET_TIMEOUT);
+        multicastAddress = InetAddress.getByName(MULTICAST_ADDRESS);
         nodes = new HashMap<>();
+
+        SnakesProto.GamePlayer me = SnakesProto.GamePlayer.newBuilder()
+                .setName("me")
+                .setId(123)
+                .setIpAddress("1234")
+                .setPort(123)
+                .setRole(SnakesProto.NodeRole.MASTER)
+                .setScore(0)
+                .build();
+        SnakesProto.GamePlayers players = SnakesProto.GamePlayers.newBuilder().addPlayers(me).build();
+        SnakesProto.GameMessage.AnnouncementMsg announcementMsg = SnakesProto.GameMessage.AnnouncementMsg.newBuilder()
+                .setPlayers(players)
+                .setConfig(SnakesProto.GameConfig.newBuilder().build())
+                .build();
+        SnakesProto.GameMessage gameMessage = SnakesProto.GameMessage.newBuilder()
+                .setAnnouncement(announcementMsg)
+                .setMsgSeq(1).build();
+        message = gameMessage.toByteArray();
     }
 
     @Override
     public void run() {
-        while (!interrupted()) {
-            listenMessages();
+        Thread multicastSender = null;
+        try {
+            multicastSender =
+                    new Thread(new MulticastSender(socket, message, new InetSocketAddress(multicastAddress, MULTICAST_PORT)));
+            multicastSender.start();
+            while (!interrupted()) {
+                listenMessages();
+            }
+            socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            assert multicastSender != null;
+            multicastSender.interrupt();
         }
-        socket.close();
     }
 
     private void listenMessages() {
+        log.debug("listen message on: " + socket.getLocalSocketAddress());
         try {
             DatagramPacket msgUdp = readMsgFromSocket();
             byte[] msgBytes = Arrays.copyOf(msgUdp.getData(), msgUdp.getLength());

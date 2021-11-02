@@ -4,7 +4,9 @@ import javafx.beans.value.ObservableValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.nsu.ccfit.kokunina.net.MasterNetworkService;
+import ru.nsu.ccfit.kokunina.net.NetworkService;
 
+import java.io.IOException;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -19,10 +21,10 @@ public class Game {
     private final FoodController foodController;
 
     // Network objects
-    private final MasterNetworkService masterNetworkService;
+    private final NetworkService networkService;
 
-    public Game(GameConfig config) throws SocketException {
-        masterNetworkService = new MasterNetworkService();
+    public Game(GameConfig config, NetworkService networkService) throws IOException {
+        this.networkService = networkService;
         snakes = new ArrayList<>();
         gameField = new Field(config.getWidth(), config.getHeight());
         foodController = new FoodController(gameField, config.getFoodStatic(), config.getFoodPerPlayer());
@@ -33,13 +35,8 @@ public class Game {
      * Use in bundle with {@link ru.nsu.ccfit.kokunina.game.Game#stop() stop} method to free resources
      */
     public void start() {
-        masterNetworkService.start();
         masterSnake = new Snake(gameField, new Coordinates(11, 11), SnakeDirection.LEFT, this);
         snakes.add(new Snake(gameField, new Coordinates(10, 10), SnakeDirection.LEFT, this));
-    }
-
-    public void stop() {
-        masterNetworkService.interrupt();
     }
 
     public void update() {
