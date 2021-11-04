@@ -2,12 +2,16 @@ package ru.nsu.ccfit.kokunina.net;
 
 import ru.nsu.ccfit.kokunina.game.SnakeDirection;
 
+import java.net.SocketAddress;
+
 public class NetworkNode {
     private long lastOnline;
     private SnakeDirection snakeDirection;
+    private SocketAddress address;
 
-    public NetworkNode() {
+    public NetworkNode(SocketAddress address) {
         lastOnline = System.currentTimeMillis();
+        this.address = address;
     }
 
     public long getLastOnline() {
@@ -24,5 +28,9 @@ public class NetworkNode {
 
     public void setSnakeDirection(SnakeDirection snakeDirection) {
         this.snakeDirection = snakeDirection;
+    }
+
+    public SocketAddress getAddress() {
+        return address;
     }
 }

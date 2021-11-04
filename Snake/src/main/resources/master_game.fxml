@@ -7,7 +7,7 @@
 <?import javafx.geometry.Insets?>
 <HBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
-      fx:controller="ru.nsu.ccfit.kokunina.controllers.GameController"
+      fx:controller="ru.nsu.ccfit.kokunina.controllers.MasterGameController"
       prefHeight="400.0" prefWidth="600.0"
       onKeyPressed="#handleKeyPressed"
       stylesheets="@styles/app.css"

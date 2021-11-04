@@ -5,7 +5,6 @@ public class Field {
     private final int width;
     private final int height;
 
-
     public Field(int width, int height) {
         this.width = width;
         this.height = height;
@@ -28,4 +27,8 @@ public class Field {
     public Cell getCell(int row, int column) {
         return cells[row][column];
     }
+    public Cell getCell(Coordinates coordinates) {
+        return cells[coordinates.getY()][coordinates.getX()];
+    }
+
 }

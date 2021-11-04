@@ -9,6 +9,9 @@ import javafx.scene.control.Button;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.nsu.ccfit.kokunina.game.GameConfig;
+import ru.nsu.ccfit.kokunina.net.MasterNetworkService;
+import ru.nsu.ccfit.kokunina.snakes.SnakesProto;
 
 import java.io.IOException;
 
@@ -22,9 +25,12 @@ public class MainMenuController {
         log.debug("startNewGame button pressed");
         try {
             FXMLLoader fxmlLoader = new FXMLLoader();
-            Parent gameList = fxmlLoader.load(getClass().getClassLoader().getResource("game.fxml").openStream());
-            GameController gameController = fxmlLoader.getController();
-            gameController.startGame();
+            Parent gameList = fxmlLoader.load(getClass().getClassLoader().getResource("master_game.fxml").openStream());
+            MasterGameController masterGameController = fxmlLoader.getController();
+            // TODO: add opportunity to enter name and config
+            SnakesProto.GameConfig defaultConfig = SnakesProto.GameConfig.newBuilder().build();
+            masterGameController.startGame(new GameConfig("Sasha" , defaultConfig),
+                                    new MasterNetworkService(defaultConfig));
             Stage newGameStage = (Stage) newGameButton.getScene().getWindow();
             newGameStage.setScene(new Scene(gameList));
 

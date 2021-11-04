@@ -86,16 +86,19 @@ public class GameListController implements Initializable {
     public void handleJoinGameButton(ActionEvent actionEvent) {
         try {
             if (selectedGame != null) {
-                NormalNetworkService normalNetworkService = new NormalNetworkService();
+                if (!selectedGame.isCanJoin()) {
+                    throw new IOException("selected game is not joinable");
+                }
+                NormalNetworkService normalNetworkService = new NormalNetworkService(selectedGame.getGameAddress());
                 normalNetworkService.sendJoin(selectedGame.getGameAddress(), "Dasha");
                 gameList.interrupt();
                 FXMLLoader fxmlLoader = new FXMLLoader();
-                Parent gameList = fxmlLoader.load(getClass().getClassLoader().getResource("game.fxml").openStream());
-                //GameController gameController = fxmlLoader.getController();
-                //gameController.startGame();
+                Parent gameList = fxmlLoader.load(getClass().getClassLoader().getResource("normal_game.fxml").openStream());
+                NormalGameController gameController = fxmlLoader.getController();
+                gameController.startGame(selectedGame.getConfig(), normalNetworkService);
                 Stage newGameStage = (Stage) joinGameButton.getScene().getWindow();
                 newGameStage.setScene(new Scene(gameList));
-                System.out.println("start game: " + selectedGame);
+                log.debug("start game: " + selectedGame.getConfig());
             }
         } catch (IOException e) {
             log.error("can not join game: " + e.getMessage());

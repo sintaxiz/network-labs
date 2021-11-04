@@ -2,6 +2,7 @@ package ru.nsu.ccfit.kokunina.game;
 
 import ru.nsu.ccfit.kokunina.game.exceptions.CellNotEmptyException;
 
+import java.util.ArrayList;
 import java.util.Random;
 
 public class FoodController {
@@ -10,11 +11,13 @@ public class FoodController {
     private final double foodPerPlayer;
 
     private int currentFoodCount;
+    private ArrayList<Coordinates> foods;
 
     public FoodController(Field field, int staticFoodCount, double foodPerPlayer) {
         this.field = field;
         this.staticFoodCount = staticFoodCount;
         this.foodPerPlayer = foodPerPlayer;
+        foods = new ArrayList<>();
     }
 
     private int recountFood(int aliveSnakes) {
@@ -30,6 +33,7 @@ public class FoodController {
             throw new CellNotEmptyException("Cell is not empty!");
         }
         currentFoodCount++;
+        foods.add(foodCoord);
     }
 
     /**
@@ -39,6 +43,7 @@ public class FoodController {
     public void eatFood(Coordinates foodCoord) {
         field.getCell(foodCoord.getY(), foodCoord.getX()).setState(CellState.SNAKE);
         currentFoodCount--;
+        foods.removeIf(f -> f.getX() == foodCoord.getX() && f.getY() == foodCoord.getY());
     }
 
     /**
@@ -67,5 +72,9 @@ public class FoodController {
                 break;
             }
         }
+    }
+
+    public ArrayList<Coordinates> getFoodsCoord() {
+        return foods;
     }
 }

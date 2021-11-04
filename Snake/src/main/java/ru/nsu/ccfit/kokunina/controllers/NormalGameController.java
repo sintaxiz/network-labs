@@ -1,6 +1,5 @@
 package ru.nsu.ccfit.kokunina.controllers;
 
-import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -21,32 +20,27 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import javafx.util.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.nsu.ccfit.kokunina.game.CellState;
-import ru.nsu.ccfit.kokunina.game.Game;
 import ru.nsu.ccfit.kokunina.game.GameConfig;
 import ru.nsu.ccfit.kokunina.game.SnakeDirection;
-import ru.nsu.ccfit.kokunina.net.MasterNetworkService;
-import ru.nsu.ccfit.kokunina.net.NetworkService;
-import ru.nsu.ccfit.kokunina.net.multicast.MulticastSender;
+import ru.nsu.ccfit.kokunina.net.NormalNetworkService;
 import ru.nsu.ccfit.kokunina.snakes.SnakesProto;
 
 import java.io.IOException;
 import java.net.URL;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.ResourceBundle;
 
-public class GameController implements Initializable {
-    private final Logger log = LoggerFactory.getLogger(GameController.class);
+public class NormalGameController implements Initializable {
+    private final Logger log = LoggerFactory.getLogger(MasterGameController.class);
 
     private final String PLAYER_NAME = "Danil";
     private final String CELL_COLOR = "#d3d3cb";
     private final String SNAKE_COLOR = "#9f2b00";
     private final String FOOD_COLOR = "#ada7a7";
-    private final double UPDATE_TIME_SEC = 0.1;
 
     public ListView<Text> playerList;
     public Text masterName;
@@ -54,59 +48,40 @@ public class GameController implements Initializable {
     public Text foodCount;
     public GridPane gameField;
 
-    private Game game;
-    private MasterNetworkService networkService;
-    private Timeline timeline;
+    private GameConfig config;
+    private NormalNetworkService networkService;
+    private ArrayList<ObjectProperty<CellState>> cellStates;
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
 
     }
 
-    private GameConfig readConfig() {
-        SnakesProto.GameConfig defaultConfig = SnakesProto.GameConfig.newBuilder().setHeight(30).build();
-        return new GameConfig(PLAYER_NAME, defaultConfig);
-    }
-
     @FXML
     private void handleKeyPressed(KeyEvent keyEvent) {
         switch (keyEvent.getCode()) {
-            case W -> game.setMasterSnakeDirection(SnakeDirection.UP);
-            case S -> game.setMasterSnakeDirection(SnakeDirection.DOWN);
-            case A -> game.setMasterSnakeDirection(SnakeDirection.LEFT);
-            case D -> game.setMasterSnakeDirection(SnakeDirection.RIGHT);
+            case W -> networkService.setPlayerSnakeDirection(SnakeDirection.UP);
+            case S -> networkService.setPlayerSnakeDirection(SnakeDirection.DOWN);
+            case A -> networkService.setPlayerSnakeDirection(SnakeDirection.LEFT);
+            case D -> networkService.setPlayerSnakeDirection(SnakeDirection.RIGHT);
         }
     }
 
     public void handleExitGameButton(ActionEvent actionEvent) throws IOException {
         // go to main screen
-        timeline.stop();
         networkService.interrupt();
         Parent mainMenu = FXMLLoader.load(getClass().getClassLoader().getResource("main_menu.fxml"));
         Stage currentStage = (Stage) gameField.getScene().getWindow();
         currentStage.setScene(new Scene(mainMenu));
     }
 
-    public void startGame() {
-        GameConfig gameConfig = readConfig();
-        masterName.setText(gameConfig.getPlayerName());
-        foodCount.setText(gameConfig.getFoodStatic() + "+" + gameConfig.getFoodPerPlayer());
-
-        // connect model & view
-        try {
-            networkService = new MasterNetworkService();
-            networkService.start();
-            game = new Game(gameConfig, networkService);
-            game.start();
-        } catch (IOException e) {
-            throw new RuntimeException("Can not start game", e);
-        }
+    private void initField() {
         gameField.setBackground(new Background(new BackgroundFill(Color.valueOf(CELL_COLOR), CornerRadii.EMPTY, Insets.EMPTY)));
-        int rows = gameConfig.getHeight();
-        int columns = gameConfig.getWidth();
+        int rows = config.getHeight();
+        int columns = config.getWidth();
         final int CELL_SIZE = 400 / rows;
         fieldSize.setText(columns + "x" + rows);
-        ArrayList<ObjectProperty<CellState>> states = new ArrayList<>();
+        cellStates = new ArrayList<>();
         for (int row = 0; row < rows; row++) {
             for (int column = 0; column < columns; column++) {
                 Rectangle cell = new Rectangle(CELL_SIZE, CELL_SIZE, Color.valueOf(CELL_COLOR));
@@ -119,18 +94,47 @@ public class GameController implements Initializable {
                         case EMPTY -> cell.setFill(Color.valueOf(CELL_COLOR));
                     }
                 });
-                state.bind(game.gameFieldCellStateProperty(row, column));
-                states.add(state);
+                //state.bind(networkService.gameFieldCellStateProperty(row, column));
+                cellStates.add(state);
             }
         }
-        timeline = new Timeline(new KeyFrame(Duration.seconds(UPDATE_TIME_SEC), e -> {
-            game.update();
-        }));
-        timeline.setCycleCount(Timeline.INDEFINITE);
-        timeline.play();
+    }
 
+    public void startGame(GameConfig gameConfig, NormalNetworkService service) {
+        networkService = service;
+        config = gameConfig;
+        masterName.setText(config.getPlayerName());
+        foodCount.setText(config.getFoodStatic() + "+" + config.getFoodPerPlayer());
+        networkService.start();
+        networkService.gameStateProperty().addListener((observable, oldState, newState) -> {
+            freeField();
+            drawFood(newState.getFoodsList());
+            drawSnakes(newState.getSnakesList());
+        });
+        initField();
 
-        log.debug("start multicast sending");
+    }
 
+    private void freeField() {
+        int width = config.getWidth();
+        int height = config.getHeight();
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                cellStates.get(i * height + j).setValue(CellState.EMPTY);
+            }
+        }
+    }
+    private void drawSnakes(List<SnakesProto.GameState.Snake> snakesList) {
+        for (SnakesProto.GameState.Snake snake : snakesList) {
+            for (SnakesProto.GameState.Coord point : snake.getPointsList()) {
+                cellStates.get(point.getY() * config.getWidth() + point.getX()).setValue(CellState.SNAKE);
+            }
+        }
+    }
+
+    private void drawFood(List<SnakesProto.GameState.Coord> foodsList) {
+        for (SnakesProto.GameState.Coord food : foodsList) {
+            cellStates.get(food.getY() * config.getWidth() + food.getX()).setValue(CellState.FOOD);
+        }
     }
 }

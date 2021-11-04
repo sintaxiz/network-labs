@@ -43,17 +43,18 @@ public class AnnouncementsReceiver extends Thread {
         try {
             byte[] buf = new byte[BUFFER_SIZE];
             DatagramPacket msg = new DatagramPacket(buf, buf.length);
-            System.out.println("going to receive datagram");
             socket.receive(msg);
             byte[] buf2 = Arrays.copyOf(msg.getData(), msg.getLength());
-            System.out.println(Arrays.toString(buf2));
-            System.out.println("receive: " + SnakesProto.GameMessage.parseFrom(buf2));
             SnakesProto.GameMessage gameMessage = SnakesProto.GameMessage.parseFrom(buf2);
             if (gameMessage.getTypeCase() == SnakesProto.GameMessage.TypeCase.ANNOUNCEMENT) {
+                log.info("receive new announcement from " + msg.getSocketAddress());
                 String gameIp = msg.getSocketAddress().toString();
+                SnakesProto.GameMessage.AnnouncementMsg annMsg = gameMessage.getAnnouncement();
                 if (!addresses.contains(gameIp)) {
+                    log.info("add new game to list " + msg.getSocketAddress());
                     addresses.add(gameIp);
-                    games.get().add(new GameListItem(msg.getSocketAddress()));
+                    games.get().add(new GameListItem(msg.getSocketAddress(), annMsg.getConfig(),
+                                        annMsg.getPlayers(), annMsg.getCanJoin()));
                 }
             }
 

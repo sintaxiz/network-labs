@@ -30,12 +30,12 @@ Label {
 }
 
 .list-cell:filled:selected:focused, .list-cell:filled:selected {
-    -fx-background-color: linear-gradient(#fdc5c5, #e35f5f);
+    -fx-background-color: #d3d3cb;
 }
 
 .list-cell:even {
-    -fx-background-color: #208c71;
+    -fx-background-color: #d37506;
 }
 .list-cell:odd {
-    -fx-background-color: #208c71;
+    -fx-background-color: #d37506;
 }
