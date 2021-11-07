@@ -90,6 +90,10 @@ public class GameListController implements Initializable {
                     throw new IOException("selected game is not joinable");
                 }
                 NormalNetworkService normalNetworkService = new NormalNetworkService(selectedGame.getGameAddress());
+                String playerName = EnterNamePopupController.askName();
+                if (playerName == null) {
+                    return;
+                }
                 normalNetworkService.sendJoin(selectedGame.getGameAddress(), "Dasha");
                 gameList.interrupt();
                 FXMLLoader fxmlLoader = new FXMLLoader();

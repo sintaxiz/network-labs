@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      alignment="CENTER"
+      spacing="10"
+      fx:controller="ru.nsu.ccfit.kokunina.controllers.EnterNamePopupController"
+      stylesheets="@styles/app.css">
+    <HBox>
+        <Label>
+            ENTER YOUR NAME HUMAN:
+        </Label>
+    </HBox>
+    <TextField fx:id="nameTextField" promptText="jojo"/>
+    <Button fx:id="okayButton" alignment="CENTER">kk</Button>
+</VBox>

@@ -39,3 +39,10 @@ Label {
 .list-cell:odd {
     -fx-background-color: #d37506;
 }
+
+.text-field {
+    -fx-background-color: transparent;
+}
+.text-field:focused {
+    -fx-background-color: transparent;
+}

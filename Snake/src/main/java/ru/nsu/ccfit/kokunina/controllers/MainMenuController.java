@@ -27,9 +27,14 @@ public class MainMenuController {
             FXMLLoader fxmlLoader = new FXMLLoader();
             Parent gameList = fxmlLoader.load(getClass().getClassLoader().getResource("master_game.fxml").openStream());
             MasterGameController masterGameController = fxmlLoader.getController();
-            // TODO: add opportunity to enter name and config
+
+            String playerName = EnterNamePopupController.askName();
+            if (playerName == null) {
+                return;
+            }
+            // TODO: add opportunity to enter config
             SnakesProto.GameConfig defaultConfig = SnakesProto.GameConfig.newBuilder().build();
-            masterGameController.startGame(new GameConfig("Sasha" , defaultConfig),
+            masterGameController.startGame(new GameConfig(playerName, defaultConfig),
                                     new MasterNetworkService(defaultConfig));
             Stage newGameStage = (Stage) newGameButton.getScene().getWindow();
             newGameStage.setScene(new Scene(gameList));
