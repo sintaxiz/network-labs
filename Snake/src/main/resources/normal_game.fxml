@@ -8,7 +8,6 @@
 <HBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
       fx:controller="ru.nsu.ccfit.kokunina.controllers.NormalGameController"
-      prefHeight="400.0" prefWidth="600.0"
       onKeyPressed="#handleKeyPressed"
       stylesheets="@styles/app.css"
       spacing="10">

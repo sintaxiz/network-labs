@@ -59,7 +59,7 @@ public class AnnouncementsReceiver extends Thread {
             }
 
         } catch (IOException e) {
-            e.printStackTrace();
+            log.debug(e.getMessage());
         }
     }
 

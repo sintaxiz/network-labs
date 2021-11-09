@@ -4,13 +4,16 @@ import java.util.LinkedList;
 
 public class Snake {
 
+    private final int uid;
     private SnakeDirection direction;
     private final LinkedList<Coordinates> coordinates;
     private final Field field;
     private boolean isDead = false;
     private final Game game;
+    private int score = 0;
 
-    public Snake(Field field, Coordinates initCoord, SnakeDirection initDirect, Game game) {
+    public Snake(Field field, Coordinates initCoord, SnakeDirection initDirect, Game game, int uid) {
+        this.uid = uid;
         this.game = game;
         coordinates = new LinkedList<>();
         coordinates.add(initCoord);
@@ -63,6 +66,7 @@ public class Snake {
             case FOOD -> {
                 coordinates.addFirst(position);
                 game.eatFood(position);
+                increaseScore();
             }
             case EMPTY -> {
                 Coordinates tailCoord = getTailCoord();
@@ -76,6 +80,10 @@ public class Snake {
                 isDead = true;
             }
         }
+    }
+
+    private void increaseScore() {
+        score++;
     }
 
     private void deleteFromField() {
@@ -137,6 +145,14 @@ public class Snake {
 
     public boolean isDead() {
         return isDead;
+    }
+
+    public Integer getId() {
+        return uid;
+    }
+
+    public int getScore() {
+        return score;
     }
 }
 

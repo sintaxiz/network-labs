@@ -28,23 +28,23 @@ import ru.nsu.ccfit.kokunina.game.CellState;
 import ru.nsu.ccfit.kokunina.game.Game;
 import ru.nsu.ccfit.kokunina.game.GameConfig;
 import ru.nsu.ccfit.kokunina.game.SnakeDirection;
-import ru.nsu.ccfit.kokunina.net.MasterNetworkService;
+import ru.nsu.ccfit.kokunina.net.NetworkService;
+import ru.nsu.ccfit.kokunina.snakes.SnakesProto;
 
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.ResourceBundle;
 
-public class MasterGameController implements Initializable {
+public class MasterGameController implements Initializable, GameController {
     private final Logger log = LoggerFactory.getLogger(MasterGameController.class);
 
-    private final String PLAYER_NAME = "Danil";
     private final String CELL_COLOR = "#d3d3cb";
     private final String SNAKE_COLOR = "#9f2b00";
     private final String FOOD_COLOR = "#ada7a7";
-    private final double UPDATE_TIME_SEC = 0.1;
 
-    public ListView<Text> playerList;
+    public ListView<SnakesProto.GamePlayer> playerList;
+    ArrayList<ObjectProperty<CellState>> states;
     public Text masterName;
     public Text fieldSize;
     public Text foodCount;
@@ -53,7 +53,8 @@ public class MasterGameController implements Initializable {
     private Game game;
     private Timeline timeline;
     private GameConfig config;
-    private MasterNetworkService networkService;
+    private  double updateTimeMs;
+    private NetworkService networkService;
 
 
     @Override
@@ -86,7 +87,7 @@ public class MasterGameController implements Initializable {
         int columns = config.getWidth();
         final int CELL_SIZE = 400 / rows;
         fieldSize.setText(columns + "x" + rows);
-        ArrayList<ObjectProperty<CellState>> states = new ArrayList<>();
+        states = new ArrayList<>();
         for (int row = 0; row < rows; row++) {
             for (int column = 0; column < columns; column++) {
                 Rectangle cell = new Rectangle(CELL_SIZE, CELL_SIZE, Color.valueOf(CELL_COLOR));
@@ -105,9 +106,10 @@ public class MasterGameController implements Initializable {
         }
     }
 
-    public void startGame(GameConfig gameConfig, MasterNetworkService service) {
+    public void startGame(GameConfig gameConfig, NetworkService service) {
         networkService = service;
         config = gameConfig;
+        updateTimeMs = gameConfig.getStateDelayMs();
         masterName.setText(config.getPlayerName());
         foodCount.setText(config.getFoodStatic() + "+" + config.getFoodPerPlayer());
 
@@ -121,7 +123,7 @@ public class MasterGameController implements Initializable {
         }
 
         initField();
-        timeline = new Timeline(new KeyFrame(Duration.seconds(UPDATE_TIME_SEC), e -> {
+        timeline = new Timeline(new KeyFrame(Duration.millis(updateTimeMs), e -> {
             try {
                 game.update();
             } catch (IOException ioException) {
@@ -130,6 +132,30 @@ public class MasterGameController implements Initializable {
         }));
         timeline.setCycleCount(Timeline.INDEFINITE);
         timeline.play();
+
+    }
+
+    public void addPlayer(int uid) {
+        game.addSnake(uid);
+    }
+
+    @Override
+    public void setSnakeDirection(int snakeId, SnakeDirection direction) {
+        game.setSnakeDirection(snakeId, direction);
+    }
+
+    @Override
+    public void normalPlayerToViewer(int senderId) {
+
+    }
+
+    @Override
+    public void deputyToMaster() {
+
+    }
+
+    @Override
+    public void setGameState(SnakesProto.GameState state) {
 
     }
 }

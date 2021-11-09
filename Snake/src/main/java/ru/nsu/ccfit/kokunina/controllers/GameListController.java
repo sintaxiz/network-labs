@@ -15,8 +15,9 @@ import javafx.stage.Stage;
 import javafx.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.nsu.ccfit.kokunina.net.NormalNetworkService;
+import ru.nsu.ccfit.kokunina.net.NetworkService;
 import ru.nsu.ccfit.kokunina.net.multicast.AnnouncementsReceiver;
+import ru.nsu.ccfit.kokunina.snakes.SnakesProto;
 
 import java.io.IOException;
 import java.net.*;
@@ -89,17 +90,19 @@ public class GameListController implements Initializable {
                 if (!selectedGame.isCanJoin()) {
                     throw new IOException("selected game is not joinable");
                 }
-                NormalNetworkService normalNetworkService = new NormalNetworkService(selectedGame.getGameAddress());
                 String playerName = EnterNamePopupController.askName();
                 if (playerName == null) {
                     return;
                 }
-                normalNetworkService.sendJoin(selectedGame.getGameAddress(), "Dasha");
                 gameList.interrupt();
                 FXMLLoader fxmlLoader = new FXMLLoader();
                 Parent gameList = fxmlLoader.load(getClass().getClassLoader().getResource("normal_game.fxml").openStream());
                 NormalGameController gameController = fxmlLoader.getController();
-                gameController.startGame(selectedGame.getConfig(), normalNetworkService);
+                NetworkService normalNetworkService = new NetworkService(gameController, null,
+                        playerName, selectedGame.getGameAddress(),
+                        SnakesProto.NodeRole.NORMAL);
+                normalNetworkService.sendJoin(selectedGame.getGameAddress(), playerName);
+                gameController.startGame(selectedGame.getConfig(), normalNetworkService, normalNetworkService.getPlayerId());
                 Stage newGameStage = (Stage) joinGameButton.getScene().getWindow();
                 newGameStage.setScene(new Scene(gameList));
                 log.debug("start game: " + selectedGame.getConfig());

@@ -10,6 +10,7 @@ import javafx.fxml.Initializable;
 import javafx.geometry.Insets;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Background;
@@ -20,12 +21,13 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import javafx.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.nsu.ccfit.kokunina.game.CellState;
 import ru.nsu.ccfit.kokunina.game.GameConfig;
 import ru.nsu.ccfit.kokunina.game.SnakeDirection;
-import ru.nsu.ccfit.kokunina.net.NormalNetworkService;
+import ru.nsu.ccfit.kokunina.net.NetworkService;
 import ru.nsu.ccfit.kokunina.snakes.SnakesProto;
 
 import java.io.IOException;
@@ -34,36 +36,36 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 
-public class NormalGameController implements Initializable {
+public class NormalGameController implements Initializable, GameController {
     private final Logger log = LoggerFactory.getLogger(MasterGameController.class);
 
-    private final String PLAYER_NAME = "Danil";
     private final String CELL_COLOR = "#d3d3cb";
     private final String SNAKE_COLOR = "#9f2b00";
     private final String FOOD_COLOR = "#ada7a7";
 
-    public ListView<Text> playerList;
+    public ListView<SnakesProto.GamePlayer> playerList;
     public Text masterName;
     public Text fieldSize;
     public Text foodCount;
     public GridPane gameField;
 
     private GameConfig config;
-    private NormalNetworkService networkService;
+    private NetworkService networkService;
     private ArrayList<ObjectProperty<CellState>> cellStates;
+
+    int snakeId;
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-
     }
 
     @FXML
-    private void handleKeyPressed(KeyEvent keyEvent) {
+    private void handleKeyPressed(KeyEvent keyEvent) throws IOException {
         switch (keyEvent.getCode()) {
-            case W -> networkService.setPlayerSnakeDirection(SnakeDirection.UP);
-            case S -> networkService.setPlayerSnakeDirection(SnakeDirection.DOWN);
-            case A -> networkService.setPlayerSnakeDirection(SnakeDirection.LEFT);
-            case D -> networkService.setPlayerSnakeDirection(SnakeDirection.RIGHT);
+            case W -> networkService.setPlayerSnakeDirection(snakeId, SnakeDirection.UP);
+            case S -> networkService.setPlayerSnakeDirection(snakeId, SnakeDirection.DOWN);
+            case A -> networkService.setPlayerSnakeDirection(snakeId, SnakeDirection.LEFT);
+            case D -> networkService.setPlayerSnakeDirection(snakeId, SnakeDirection.RIGHT);
         }
     }
 
@@ -100,19 +102,42 @@ public class NormalGameController implements Initializable {
         }
     }
 
-    public void startGame(GameConfig gameConfig, NormalNetworkService service) {
-        networkService = service;
+    public void startGame(GameConfig gameConfig, NetworkService networkService, int playerId) {
+        this.networkService = networkService;
         config = gameConfig;
+        snakeId = playerId;
         masterName.setText(config.getPlayerName());
         foodCount.setText(config.getFoodStatic() + "+" + config.getFoodPerPlayer());
         networkService.start();
-        networkService.gameStateProperty().addListener((observable, oldState, newState) -> {
-            freeField();
-            drawFood(newState.getFoodsList());
-            drawSnakes(newState.getSnakesList());
+//        playerList.itemsProperty().bind(networkService.playersProperty());
+        playerList.setCellFactory(new Callback<>() {
+            @Override
+            public ListCell<SnakesProto.GamePlayer> call(ListView<SnakesProto.GamePlayer> param) {
+                return new ListCell<>() {
+                    @Override
+                    protected void updateItem(SnakesProto.GamePlayer item, boolean empty) {
+                        super.updateItem(item, empty);
+                        if (item != null) {
+                            setText(item.getName() + ": " + item.getScore());
+                        } else {
+                            setText("");
+                        }
+                    }
+                };
+            }
         });
         initField();
 
+    }
+
+    private void updatePlayerList(SnakesProto.GamePlayers players) {
+        List<SnakesProto.GamePlayer> playersList = players.getPlayersList();
+        for (SnakesProto.GamePlayer player : playersList) {
+            if (playerList.getItems().contains(player)) {
+                continue;
+            }
+            playerList.getItems().add(player);
+        }
     }
 
     private void freeField() {
@@ -124,6 +149,7 @@ public class NormalGameController implements Initializable {
             }
         }
     }
+
     private void drawSnakes(List<SnakesProto.GameState.Snake> snakesList) {
         for (SnakesProto.GameState.Snake snake : snakesList) {
             for (SnakesProto.GameState.Coord point : snake.getPointsList()) {
@@ -137,4 +163,32 @@ public class NormalGameController implements Initializable {
             cellStates.get(food.getY() * config.getWidth() + food.getX()).setValue(CellState.FOOD);
         }
     }
+
+    @Override
+    public void setGameState(SnakesProto.GameState state) {
+        freeField();
+        drawFood(state.getFoodsList());
+        drawSnakes(state.getSnakesList());
+        updatePlayerList(state.getPlayers());
+    }
+
+    @Override
+    public void addPlayer(int uid) {
+    }
+
+    @Override
+    public void setSnakeDirection(int snakeId, SnakeDirection direction) {
+
+    }
+
+    @Override
+    public void normalPlayerToViewer(int senderId) {
+
+    }
+
+    @Override
+    public void deputyToMaster() {
+
+    }
+
 }

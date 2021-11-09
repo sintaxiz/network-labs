@@ -17,6 +17,6 @@
             ENTER YOUR NAME HUMAN:
         </Label>
     </HBox>
-    <TextField fx:id="nameTextField" promptText="jojo"/>
+    <TextField fx:id="nameTextField"/>
     <Button fx:id="okayButton" alignment="CENTER">kk</Button>
 </VBox>
