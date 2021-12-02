@@ -1,6 +1,2 @@
-build/
-.idea/
-.gradle/
-gradle/
-gradlew.bat
-gradlew
+/node_modules/
+/dist/
