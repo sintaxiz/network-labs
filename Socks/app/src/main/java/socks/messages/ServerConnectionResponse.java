@@ -8,4 +8,6 @@ public class ServerConnectionResponse {
     ConnectionStatus connectionStatus;
     Socks5Address boundAddress;
     int boundPort;
+    // Response packet from server 	VER STATUS RSV BNDADDR BNDPORT
+
 }

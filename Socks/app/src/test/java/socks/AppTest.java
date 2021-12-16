@@ -6,6 +6,8 @@ package socks;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -16,6 +18,18 @@ class AppTest {
     @Test void clientConnectsToServer() throws IOException {
         Socket socket = new Socket();
         socket.connect(new InetSocketAddress("127.0.0.1", 1112));
-        socket.getOutputStream().write("how do you do?".getBytes(StandardCharsets.UTF_8));
+        OutputStream out  = socket.getOutputStream();
+        out.write("how do you do?1".getBytes(StandardCharsets.UTF_8));
+        InputStream in = socket.getInputStream();
+        byte []buffer = new byte[256];
+        int read = in.read(buffer);
+        System.out.println("Received from server: " + new String(buffer, 0, read));
+        out.write("how do you do?2".getBytes(StandardCharsets.UTF_8));
+        out.write("how do you do?3".getBytes(StandardCharsets.UTF_8));
+        read = in.read(buffer);
+        System.out.println("Received from server: " + new String(buffer, 0, read));
+        out.write("how do you do?4".getBytes(StandardCharsets.UTF_8));
+        read = in.read(buffer);
+        System.out.println("Received from server: " + new String(buffer, 0, read));
     }
 }
