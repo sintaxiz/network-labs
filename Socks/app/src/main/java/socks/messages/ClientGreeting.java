@@ -10,7 +10,7 @@ import java.util.Set;
 /**
  * Client connects and sends a greeting, which includes a list of authentication methods supported.
  */
-public class ClientGreeting {
+public class ClientGreeting implements SocksMessage {
     SocksVersion socksVersion;
     int numberAuth;
     Set<AuthMethod> authMethods;
@@ -21,6 +21,9 @@ public class ClientGreeting {
      * @throws WrongSocksMessageException if some of bytes are incorrect
      */
     public ClientGreeting(byte[] msg) throws WrongSocksMessageException {
+        if (msg.length < 3) {
+            throw new WrongSocksMessageException("too short message");
+        }
         switch (msg[0]) {
             case 0x04 -> socksVersion = SocksVersion.SOCKS4;
             case 0x05 -> socksVersion = SocksVersion.SOCKS5;
@@ -36,5 +39,15 @@ public class ClientGreeting {
             case 0x00 -> authMethods.add(AuthMethod.NO_AUTH);
             default -> throw new WrongSocksMessageException();
         }
+    }
+
+    @Override
+    public byte[] toByteArray() {
+        return new byte[0];
+    }
+
+    @Override
+    public String toString() {
+        return "Socks Version: " + socksVersion.toString() + " Number of auth methods: " + numberAuth;
     }
 }

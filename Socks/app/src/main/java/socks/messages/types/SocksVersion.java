@@ -17,5 +17,30 @@ public enum SocksVersion {
                 default -> throw new WrongSocksMessageException();
             }
     }
+
+    public static byte toByte(SocksVersion socksVersion) {
+        switch (socksVersion) {
+            case SOCKS4 -> {
+                return 0x04;
+            }
+            case SOCKS5 -> {
+                return 0x05;
+            }
+            default -> throw new RuntimeException("Wrong value of enum");
+        }
+    }
+
+    @Override
+    public String toString() {
+        switch (this) {
+            case SOCKS4 -> {
+                return "SOCKSv4";
+            }
+            case SOCKS5 -> {
+                return "SOCKSv5";
+            }
+            default -> throw new RuntimeException("Wrong value of enum");
+        }
+    }
 }
 

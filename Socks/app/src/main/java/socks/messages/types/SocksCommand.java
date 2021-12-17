@@ -21,4 +21,22 @@ public enum SocksCommand {
             default -> throw new WrongSocksMessageException();
         }
     }
+
+
+    @Override
+    public String toString() {
+        switch (this) {
+            case ESTABLISH_TCP_CONNECTION -> {
+                return "establish tcp connection";
+            }
+            case ESTABLISH_TCP_PORT_BINDING -> {
+                return "establish tcp port binding";
+            }
+            case ASSOCIATE_UDP_PORT -> {
+                return "associate upd port";
+            }
+
+            default -> throw new RuntimeException();
+        }
+    }
 }

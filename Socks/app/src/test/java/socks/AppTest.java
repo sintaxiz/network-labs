@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -19,17 +20,17 @@ class AppTest {
         Socket socket = new Socket();
         socket.connect(new InetSocketAddress("127.0.0.1", 1112));
         OutputStream out  = socket.getOutputStream();
-        out.write("how do you do?1".getBytes(StandardCharsets.UTF_8));
+        out.write(new byte[] {0x05, 0, 0});
         InputStream in = socket.getInputStream();
         byte []buffer = new byte[256];
         int read = in.read(buffer);
-        System.out.println("Received from server: " + new String(buffer, 0, read));
-        out.write("how do you do?2".getBytes(StandardCharsets.UTF_8));
-        out.write("how do you do?3".getBytes(StandardCharsets.UTF_8));
+        System.out.println("Received from server: " + Arrays.toString(Arrays.copyOfRange(buffer, 0, read)));
+
+        out.write(new byte[] {0x05, 0x01, 0x00, 0x03, (byte) ("masyana.ru/".getBytes(StandardCharsets.UTF_8).length - 1)});
+        out.write("masyana.ru/".getBytes(StandardCharsets.UTF_8));
+        out.write(new byte[]{0x08, 0x08});
         read = in.read(buffer);
-        System.out.println("Received from server: " + new String(buffer, 0, read));
-        out.write("how do you do?4".getBytes(StandardCharsets.UTF_8));
-        read = in.read(buffer);
-        System.out.println("Received from server: " + new String(buffer, 0, read));
+        System.out.println("Received from server: " + Arrays.toString(Arrays.copyOfRange(buffer, 0, read)));
+
     }
 }
