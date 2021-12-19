@@ -31,28 +31,25 @@ public class SocksServer {
 
         System.out.println("Start serving");
         while (!Thread.currentThread().isInterrupted()) {
-            try {
-                selector.select(1000);
-                Iterator<SelectionKey> keysIterator = selector.selectedKeys().iterator();
-                while (keysIterator.hasNext()) {
-                    SelectionKey key = keysIterator.next();
-                    keysIterator.remove();
-                    if (!key.isValid()) {
-                        continue;
-                    } else
-                    if (key.isAcceptable()) {
-                        accept(key);
-                    } else
-                    if (key.isReadable()) {
-                        read(key);
-                    } else
-                    if (key.isWritable()) {
-                        write(key);
-                    }
-                }
-            } catch (IOException e) {
-                System.out.println("Catch exception while serving: " + e.getMessage());
+                selector.select(this::performActionOnKey);
+        }
+
+        selector.close();
+    }
+
+    private void performActionOnKey(SelectionKey key) {
+        try {
+            if (!key.isValid()) {
+                System.out.println("ERROR: not valid key");
+            } else if (key.isAcceptable()) {
+                accept(key);
+            } else if (key.isReadable()) {
+                read(key);
+            } else if (key.isWritable()) {
+                write(key);
             }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -62,7 +59,6 @@ public class SocksServer {
             TcpConnection tcpConnection = (TcpConnection) key.attachment();
             tcpConnection.write(socketChannel);
             socketChannel.register(key.selector(), SelectionKey.OP_READ, tcpConnection);
-            //socketChannel.write(ByteBuffer.wrap("yeeeeee im working! C:".getBytes(StandardCharsets.UTF_8)));
         } catch (IOException e) {
             e.printStackTrace();
             key.cancel();
@@ -77,15 +73,9 @@ public class SocksServer {
             TcpConnection tcpConnection = (TcpConnection) key.attachment();
             switch (tcpConnection.currentState) {
                 case WAITING_FOR_GREETINGS -> tcpConnection.readGreeting();
-                case WAITING_FOR_COMMAND -> tcpConnection.readCommandRequest();
+                case WAITING_FOR_COMMAND -> tcpConnection.readCommandRequest(key);
+                case TRANSMITTING_DATA -> tcpConnection.read(socketChannel);
             }
-//            ByteBuffer readBuffer = ByteBuffer.allocate(1024);
-//            readBuffer.clear();
-//            int read = socketChannel.read(readBuffer);
-//            readBuffer.flip();
-//            byte[] data = new byte[1000];
-//            readBuffer.get(data, 0, read);
-//            System.out.println("Received: " + new String(data, 0, read));
             key.interestOps(SelectionKey.OP_WRITE);
             key.attach(tcpConnection);
         } catch (IOException | WrongSocksMessageException e) {
@@ -99,8 +89,8 @@ public class SocksServer {
         ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
         SocketChannel socketChannel = serverSocketChannel.accept();
         socketChannel.configureBlocking(false);
-        socketChannel.register( key.selector(), SelectionKey.OP_READ,
-                                new TcpConnection(socketChannel, TcpConnectionState.WAITING_FOR_GREETINGS, key.selector()));
+        socketChannel.register(key.selector(), SelectionKey.OP_READ,
+                new TcpConnection(socketChannel, TcpConnectionState.WAITING_FOR_GREETINGS, key.selector()));
         System.out.println("Add new connection: " + socketChannel.getRemoteAddress());
         System.out.println("Waiting a greeting from: " + socketChannel.getRemoteAddress());
     }

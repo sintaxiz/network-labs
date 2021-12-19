@@ -26,9 +26,12 @@ class AppTest {
         int read = in.read(buffer);
         System.out.println("Received from server: " + Arrays.toString(Arrays.copyOfRange(buffer, 0, read)));
 
-        out.write(new byte[] {0x05, 0x01, 0x00, 0x03, (byte) ("masyana.ru/".getBytes(StandardCharsets.UTF_8).length - 1)});
-        out.write("masyana.ru/".getBytes(StandardCharsets.UTF_8));
-        out.write(new byte[]{0x08, 0x08});
+        out.write(new byte[] {0x05, 0x01, 0x00, 0x03, (byte) ("weather.nsu.ru".getBytes(StandardCharsets.UTF_8).length)});
+        out.write("weather.nsu.ru".getBytes(StandardCharsets.UTF_8));
+        out.write(new byte[]{0x00, 80});
+
+        out.write(new byte[]{ 66, 66});
+
         read = in.read(buffer);
         System.out.println("Received from server: " + Arrays.toString(Arrays.copyOfRange(buffer, 0, read)));
 

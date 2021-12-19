@@ -21,7 +21,7 @@ public class Socks5Address {
             case IPv4 -> {
                 if (bytes.length < 5) throw new TooShortSocksMessageException();
                 return new Socks5Address(Socks5AddressType.IPv4,
-                        bytes[0] + "." + bytes[1] + "." + bytes[2] + "." + bytes[3]);
+                        Byte.toUnsignedInt(bytes[0]) + "." + Byte.toUnsignedInt(bytes[1]) + "." + Byte.toUnsignedInt(bytes[2]) + "." + Byte.toUnsignedInt(bytes[3]));
             }
             case IPv6 -> {
                 return new Socks5Address(Socks5AddressType.IPv6, ""); // maybe add ipv6 support later
@@ -35,6 +35,14 @@ public class Socks5Address {
             }
             default -> throw new WrongSocksMessageException("bad value for enum Socks5AddressType");
         }
+    }
+
+    public Socks5AddressType getAddressType() {
+        return addressType;
+    }
+
+    public String getAddress() {
+        return address;
     }
 
     @Override

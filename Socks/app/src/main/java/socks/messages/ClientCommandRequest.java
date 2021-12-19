@@ -19,6 +19,7 @@ public class ClientCommandRequest implements SocksMessage {
         if (msg.length < 4) {
             throw new TooShortSocksMessageException();
         }
+        System.out.println(Arrays.toString(msg));
         // Client sends a connection request
         // VER (1)	CMD (1)	RSV (1)	DSTADDR (var) DSTPORT (2)
         version = SocksVersion.parseByte(msg[0]);
@@ -26,7 +27,6 @@ public class ClientCommandRequest implements SocksMessage {
         if (msg[2] != 0x00) {
             throw new WrongSocksMessageException("reserved byte should be 0x00");
         }
-        System.out.println("byte for address type: " + msg[3]);
         Socks5AddressType addressType = Socks5AddressType.parseByte(msg[3]);
         destinationAddr = Socks5Address.parseBytes( Arrays.copyOfRange(msg, 4, msg.length), addressType);
         int portIdx = 0;
