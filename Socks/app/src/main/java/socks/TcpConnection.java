@@ -8,6 +8,8 @@ import socks.messages.types.ConnectionStatus;
 import socks.messages.types.ServerStatus;
 import socks.messages.types.SocksVersion;
 
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -46,11 +48,16 @@ public class TcpConnection {
 
     private byte[] readData(SocketChannel channel) throws IOException {
         int read = channel.read(messageFromInput);
+        int totalRead = read;
+        while (read > 0) {
+            read = channel.read(messageFromInput);
+            totalRead += read;
+        }
         messageFromInput.flip();
-        if (read < 0) throw new IOException("end of channel");
+        if (totalRead < 0) throw new IOException("end of channel");
         System.out.println("Read data from " + channel.getRemoteAddress() + ": "
-                + Arrays.toString(Arrays.copyOfRange(messageFromInput.array(), 0, read)));
-        return Arrays.copyOfRange(messageFromInput.array(), 0, read);
+                + Arrays.toString(Arrays.copyOfRange(messageFromInput.array(), 0, totalRead)));
+        return Arrays.copyOfRange(messageFromInput.array(), 0, totalRead);
     }
 
 
@@ -128,7 +135,7 @@ public class TcpConnection {
             currentState = TcpConnectionState.WAITING_FOR_COMMAND;
         }
         queueClientMessage(response);
-        key.interestOps(SelectionKey.OP_WRITE);
+        clientChannel.register(selector, SelectionKey.OP_WRITE, this);
     }
 
 
@@ -161,18 +168,14 @@ public class TcpConnection {
         System.out.println("going write to " + socketChannel.getRemoteAddress());
         if (socketChannel.equals(clientChannel)) {
             if (messageToClient != null) {
-                byteBuffer.put(messageToClient);
-                byteBuffer.flip();
-                writeToChannel(socketChannel, byteBuffer);
+                writeToChannel(socketChannel, ByteBuffer.wrap(messageToClient));
                 System.out.println("Successfully write to client channel: " + Arrays.toString(messageToClient));
-                byteBuffer.clear();
-                System.out.println("message to client == " + Arrays.toString(messageToClient));
                 messageToClient = null;
                 key.interestOps(SelectionKey.OP_READ);
             } else {
                 System.out.println("no message to client..");
                 // not interesting in write because no message
-                key.interestOps(SelectionKey.OP_READ);
+                key.cancel();
             }
         } else if (socketChannel.equals(serverChannel)) {
             System.out.println("Wants to write to server channel...");
@@ -182,16 +185,17 @@ public class TcpConnection {
                 writeToChannel(socketChannel, byteBuffer);
                 System.out.println("Successfully write to server channel: " + Arrays.toString(messageToServer));
                 byteBuffer.clear();
-                System.out.println("message to server == " + Arrays.toString(messageToServer));
                 messageToServer = null;
                 key.interestOps(SelectionKey.OP_READ);
+            } else {
+                key.cancel();
             }
         } else {
             System.out.println("ERROR: wrong socket channel (not input, not output)");
         }
     }
 
-    public void read(SocketChannel socketChannel) throws IOException {
+    public void read(SocketChannel socketChannel, SelectionKey key) throws IOException {
         if (socketChannel.equals(clientChannel)) {
             System.out.println("Going to read from client...");
             if (messageToServer != null && messageToServer.length > 0) {
@@ -199,13 +203,24 @@ public class TcpConnection {
             } else {
                 messageToServer = readData(clientChannel);
             }
-            serverChannel.register(selector, SelectionKey.OP_WRITE, this);
+            if (messageToServer.length != 0) {
+                serverChannel.register(selector, SelectionKey.OP_WRITE, this);
+            } else {
+                key.cancel();
+            }
             //System.out.println("successfully register server channel: " + serverChannel.getRemoteAddress());
         } else if (socketChannel.equals(serverChannel)) {
             System.out.println("Going to read from server...");
-            messageToClient = readData(serverChannel);
-            System.out.println("CURRENT MESSAGE TO CLIENT: " + Arrays.toString(messageToClient));
-            clientChannel.register(selector, SelectionKey.OP_WRITE, this);
+            if (messageToClient != null && messageToClient.length > 0) {
+                messageToClient = concatenate(messageToClient, readData(serverChannel));
+            } else {
+                messageToClient = readData(serverChannel);
+            }
+            if (messageToClient.length != 0) {
+                clientChannel.register(selector, SelectionKey.OP_WRITE, this);
+            } else {
+                key.cancel();
+            }
         } else {
             System.out.println("ERROR: wrong socket channel (not input, not output)");
         }

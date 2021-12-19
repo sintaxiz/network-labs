@@ -88,7 +88,7 @@ public class SocksServer {
             switch (tcpConnection.currentState) {
                 case WAITING_FOR_GREETINGS -> tcpConnection.readGreeting();
                 case WAITING_FOR_COMMAND -> tcpConnection.readCommandRequest(key);
-                case TRANSMITTING_DATA -> tcpConnection.read(socketChannel);
+                case TRANSMITTING_DATA -> tcpConnection.read(socketChannel, key);
                 case CONNECTING -> key.interestOps(0);
             }
             //key.interestOps(SelectionKey.OP_WRITE);
