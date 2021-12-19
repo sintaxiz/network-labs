@@ -18,8 +18,8 @@ public enum SocksVersion {
             }
     }
 
-    public static byte toByte(SocksVersion socksVersion) {
-        switch (socksVersion) {
+    public byte toByte() {
+        switch (this) {
             case SOCKS4 -> {
                 return 0x04;
             }

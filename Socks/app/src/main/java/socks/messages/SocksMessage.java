@@ -1,5 +1,7 @@
 package socks.messages;
 
+import socks.exceptions.WrongSocksMessageException;
+
 public interface SocksMessage {
-    byte[] toByteArray();
+    byte[] toByteArray() throws WrongSocksMessageException;
 }

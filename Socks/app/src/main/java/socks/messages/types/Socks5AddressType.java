@@ -21,4 +21,20 @@ public enum Socks5AddressType {
     }
 
 
+    public byte toByte()  {
+        switch (this) {
+            case IPv4 -> {
+                return 0x01;
+            }
+            case DOMAIN_NAME -> {
+                return 0x03;
+            }
+            case IPv6 -> {
+                return 0x04;
+            }
+            default -> {
+                return 0x00;
+            }
+        }
+    }
 }

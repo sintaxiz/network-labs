@@ -37,6 +37,30 @@ public class Socks5Address {
         }
     }
 
+    public byte[] toBytes() throws WrongSocksMessageException {
+        byte[] addressBytes = null;
+        switch (addressType) {
+            case IPv4 -> {
+                addressBytes = new byte[4];
+                String[] addressParts = address.split("\\.");
+                if (addressParts.length < 4) {
+                    throw new WrongSocksMessageException("bad address");
+                }
+                for (int i = 0; i < 4; i++) {
+                    addressBytes[i] = (byte) Integer.parseInt(addressParts[i]);
+                }
+            }
+            case IPv6 -> {
+                addressBytes = new byte[16];
+                // todo: implement support IPv6
+            }
+            case DOMAIN_NAME -> {
+                addressBytes = address.getBytes(StandardCharsets.UTF_8);
+            }
+        }
+        return addressBytes;
+    }
+
     public Socks5AddressType getAddressType() {
         return addressType;
     }

@@ -4,13 +4,10 @@ import socks.exceptions.WrongSocksMessageException;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.StandardCharsets;
-import java.util.Iterator;
 
 public class SocksServer {
     private final int port;
@@ -31,7 +28,8 @@ public class SocksServer {
 
         System.out.println("Start serving");
         while (!Thread.currentThread().isInterrupted()) {
-                selector.select(this::performActionOnKey);
+            selector.select(this::performActionOnKey);
+            //System.out.println("DEBUG: " + selector.keys());
         }
 
         selector.close();
@@ -40,43 +38,60 @@ public class SocksServer {
     private void performActionOnKey(SelectionKey key) {
         try {
             if (!key.isValid()) {
-                System.out.println("ERROR: not valid key");
+                System.out.println("SELECT ERROR: not valid key");
             } else if (key.isAcceptable()) {
                 accept(key);
             } else if (key.isReadable()) {
                 read(key);
             } else if (key.isWritable()) {
                 write(key);
+            } else if (key.isConnectable()) {
+                connect(key);
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+    private void connect(SelectionKey key) throws IOException {
+        try {
+            SocketChannel socketChannel = (SocketChannel) key.channel();
+            System.out.println("SELECT OP_CONNECT:" + socketChannel.getRemoteAddress());
+            TcpConnection tcpConnection = (TcpConnection) key.attachment();
+            tcpConnection.finishTcpConnection(socketChannel, key);
+        } catch (WrongSocksMessageException e) {
+            System.out.println("ERROR SELECT OP_CONNECT");
+        }
+
+    }
+
     private void write(SelectionKey key) throws IOException {
         SocketChannel socketChannel = (SocketChannel) key.channel();
+        System.out.println("SELECT OP_WRITE:" + socketChannel.getRemoteAddress());
         try {
             TcpConnection tcpConnection = (TcpConnection) key.attachment();
-            tcpConnection.write(socketChannel);
-            socketChannel.register(key.selector(), SelectionKey.OP_READ, tcpConnection);
+            tcpConnection.write(socketChannel, key);
+            //socketChannel.register(key.selector(), SelectionKey.OP_READ, tcpConnection);
         } catch (IOException e) {
             e.printStackTrace();
             key.cancel();
             socketChannel.close();
         }
-        key.interestOps(SelectionKey.OP_READ);
+        //key.interestOps(SelectionKey.OP_READ);
     }
 
-    private void read(SelectionKey key) {
+    private void read(SelectionKey key) throws IOException {
         SocketChannel socketChannel = (SocketChannel) key.channel();
+        System.out.println("SELECT OP_READ:" + socketChannel.getRemoteAddress());
         try {
             TcpConnection tcpConnection = (TcpConnection) key.attachment();
             switch (tcpConnection.currentState) {
                 case WAITING_FOR_GREETINGS -> tcpConnection.readGreeting();
                 case WAITING_FOR_COMMAND -> tcpConnection.readCommandRequest(key);
                 case TRANSMITTING_DATA -> tcpConnection.read(socketChannel);
+                case CONNECTING -> key.interestOps(0);
             }
-            key.interestOps(SelectionKey.OP_WRITE);
+            //key.interestOps(SelectionKey.OP_WRITE);
             key.attach(tcpConnection);
         } catch (IOException | WrongSocksMessageException e) {
             e.printStackTrace();
@@ -87,6 +102,7 @@ public class SocksServer {
     // Добавляет нового клиента
     private void accept(SelectionKey key) throws IOException {
         ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
+        System.out.println("SELECT OP_ACCEPT:" + serverSocketChannel.getLocalAddress());
         SocketChannel socketChannel = serverSocketChannel.accept();
         socketChannel.configureBlocking(false);
         socketChannel.register(key.selector(), SelectionKey.OP_READ,

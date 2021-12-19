@@ -15,7 +15,7 @@ public class ServerAuthChoice implements SocksMessage {
     @Override
     public byte[] toByteArray() {
         byte[] authChoiceBytes = new byte[2];
-        authChoiceBytes[0] = SocksVersion.toByte(version);
+        authChoiceBytes[0] = version.toByte();
         authChoiceBytes[1] = AuthMethod.toByte(chosenMethod);
         return authChoiceBytes;
     }

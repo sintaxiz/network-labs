@@ -31,11 +31,11 @@ public class ClientCommandRequest implements SocksMessage {
         destinationAddr = Socks5Address.parseBytes( Arrays.copyOfRange(msg, 4, msg.length), addressType);
         int portIdx = 0;
         switch (addressType) {
-            case IPv4 -> portIdx = 4 + 3;
-            case IPv6 -> portIdx = 16 + 3;
+            case IPv4 -> portIdx = 4 + 4;
+            case IPv6 -> portIdx = 16 + 4;
             case DOMAIN_NAME -> portIdx = msg[4] + 5;
         }
-        if (portIdx >= msg.length) throw new TooShortSocksMessageException();
+        if (portIdx + 1 >= msg.length) throw new TooShortSocksMessageException();
         destinationPort = ((msg[portIdx] & 0xff) << 8) | (msg[portIdx + 1] & 0xff);;     //port number in a network byte order
     }
 
