@@ -13,7 +13,6 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import static org.junit.jupiter.api.Assertions.*;
 
 class AppTest {
     @Test void clientConnectsToServer() throws IOException {
@@ -24,7 +23,7 @@ class AppTest {
         InputStream in = socket.getInputStream();
         byte []buffer = new byte[256];
         int read = in.read(buffer);
-        System.out.println("Received from server: " + Arrays.toString(Arrays.copyOfRange(buffer, 0, read)));
+        log.debug("Received from server: " + Arrays.toString(Arrays.copyOfRange(buffer, 0, read)));
 
         out.write(new byte[] {0x05, 0x01, 0x00, 0x03, (byte) ("weather.nsu.ru".getBytes(StandardCharsets.UTF_8).length)});
         out.write("weather.nsu.ru".getBytes(StandardCharsets.UTF_8));
@@ -33,7 +32,7 @@ class AppTest {
         out.write(new byte[]{ 66, 66});
 
         read = in.read(buffer);
-        System.out.println("Received from server: " + Arrays.toString(Arrays.copyOfRange(buffer, 0, read)));
+        log.debug("Received from server: " + Arrays.toString(Arrays.copyOfRange(buffer, 0, read)));
 
     }
 }

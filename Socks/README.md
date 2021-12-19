@@ -6,7 +6,7 @@
 - [x] add command 0x01 (establish a TCP/IP stream connection)
 - [ ] add IPv6 support
 - [ ] add DNS resolving
-- [ ] add logging
+- [x] add logging
 
 
   [SOCKS Protocol Version 5 RFC](https://www.ietf.org/rfc/rfc1928.txt)

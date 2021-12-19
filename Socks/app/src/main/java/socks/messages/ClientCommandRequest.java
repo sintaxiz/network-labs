@@ -1,5 +1,8 @@
 package socks.messages;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import socks.SocksServer;
 import socks.exceptions.TooShortSocksMessageException;
 import socks.exceptions.WrongSocksMessageException;
 import socks.messages.types.Socks5AddressType;
@@ -9,6 +12,7 @@ import socks.messages.types.SocksVersion;
 import java.util.Arrays;
 
 public class ClientCommandRequest implements SocksMessage {
+    private static Logger log = LogManager.getLogger(ClientCommandRequest.class);
 
     SocksVersion version;
     SocksCommand socksCommand;
@@ -19,7 +23,7 @@ public class ClientCommandRequest implements SocksMessage {
         if (msg.length < 4) {
             throw new TooShortSocksMessageException();
         }
-        System.out.println(Arrays.toString(msg));
+        log.debug(Arrays.toString(msg));
         // Client sends a connection request
         // VER (1)	CMD (1)	RSV (1)	DSTADDR (var) DSTPORT (2)
         version = SocksVersion.parseByte(msg[0]);

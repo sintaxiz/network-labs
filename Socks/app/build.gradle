@@ -22,8 +22,13 @@ dependencies {
     // Use JUnit Jupiter for testing.
     testImplementation 'org.junit.jupiter:junit-jupiter:5.7.2'
 
-    // This dependency is used by the application.
-    implementation 'com.google.guava:guava:30.1.1-jre'
+    // Dependency for resolving domain names
+    implementation 'dnsjava:dnsjava:2.1.1'
+
+    // Dependency for logging
+    implementation 'org.apache.logging.log4j:log4j-api:2.17.0'
+    implementation 'org.apache.logging.log4j:log4j-core:2.17.0'
+
 }
 
 application {
