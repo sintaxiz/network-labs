@@ -15,6 +15,11 @@ import java.util.Arrays;
 
 
 class AppTest {
+
+    @Test void runApp() throws IOException {
+        App.main(new String[]{});
+    }
+
     @Test void clientConnectsToServer() throws IOException {
         Socket socket = new Socket();
         socket.connect(new InetSocketAddress("127.0.0.1", 1112));
@@ -23,7 +28,7 @@ class AppTest {
         InputStream in = socket.getInputStream();
         byte []buffer = new byte[256];
         int read = in.read(buffer);
-        log.debug("Received from server: " + Arrays.toString(Arrays.copyOfRange(buffer, 0, read)));
+        System.out.println("Received from server: " + Arrays.toString(Arrays.copyOfRange(buffer, 0, read)));
 
         out.write(new byte[] {0x05, 0x01, 0x00, 0x03, (byte) ("weather.nsu.ru".getBytes(StandardCharsets.UTF_8).length)});
         out.write("weather.nsu.ru".getBytes(StandardCharsets.UTF_8));
@@ -31,8 +36,7 @@ class AppTest {
 
         out.write(new byte[]{ 66, 66});
 
-        read = in.read(buffer);
-        log.debug("Received from server: " + Arrays.toString(Arrays.copyOfRange(buffer, 0, read)));
+        //log.debug("Received from server: " + Arrays.toString(Arrays.copyOfRange(buffer, 0, read)));
 
     }
 }

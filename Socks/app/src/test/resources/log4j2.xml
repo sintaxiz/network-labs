@@ -1,0 +1,17 @@
+<Configuration status="warn" name="" packages="">
+    <Appenders>
+        <Console name="console" target="SYSTEM_OUT">
+            <PatternLayout pattern="==%p== %d{HH:mm:ss} %m%n"/>
+        </Console>
+        <File name="file" fileName="socks.log" append="tru">
+            <PatternLayout pattern="==%p== %d{yyyy-MM-dd HH:mm:ss} %p %m%n" />
+        </File>
+    </Appenders>
+    <Loggers>
+        <Root level="debug">
+            <AppenderRef ref="console" />
+            <AppenderRef ref="file" />
+        </Root>
+    </Loggers>
+</Configuration>
+

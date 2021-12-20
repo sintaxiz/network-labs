@@ -16,12 +16,14 @@ public class Socks5Address {
         this.address = address;
     }
 
-    public static Socks5Address parseBytes(byte[] bytes, Socks5AddressType addressType) throws WrongSocksMessageException, TooShortSocksMessageException {
+    public static Socks5Address parseBytes(byte[] bytes, Socks5AddressType addressType)
+            throws WrongSocksMessageException, TooShortSocksMessageException {
         switch (addressType) {
             case IPv4 -> {
                 if (bytes.length < 5) throw new TooShortSocksMessageException();
                 return new Socks5Address(Socks5AddressType.IPv4,
-                        Byte.toUnsignedInt(bytes[0]) + "." + Byte.toUnsignedInt(bytes[1]) + "." + Byte.toUnsignedInt(bytes[2]) + "." + Byte.toUnsignedInt(bytes[3]));
+                        Byte.toUnsignedInt(bytes[0]) + "." + Byte.toUnsignedInt(bytes[1]) + "."
+                                + Byte.toUnsignedInt(bytes[2]) + "." + Byte.toUnsignedInt(bytes[3]));
             }
             case IPv6 -> {
                 return new Socks5Address(Socks5AddressType.IPv6, ""); // maybe add ipv6 support later
@@ -31,7 +33,9 @@ public class Socks5Address {
                 int domainNameLength = bytes[0];
                 if (bytes.length < domainNameLength) throw new TooShortSocksMessageException();
                 byte[] domainNameBytes = Arrays.copyOfRange(bytes, 1, domainNameLength + 1);
-                return new Socks5Address(Socks5AddressType.DOMAIN_NAME, new String(domainNameBytes, StandardCharsets.UTF_8));
+                return  new Socks5Address(
+                        Socks5AddressType.DOMAIN_NAME, new String(domainNameBytes, StandardCharsets.UTF_8)
+                );
             }
             default -> throw new WrongSocksMessageException("bad value for enum Socks5AddressType");
         }
