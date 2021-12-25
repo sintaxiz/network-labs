@@ -121,8 +121,11 @@ public class TcpConnection implements DnsSubscriber {
                 serverChannel.register(selector, SelectionKey.OP_CONNECT, this);
             }
             case DOMAIN_NAME -> {
-                dnsResolver.resolve(destinationAddr.getAddress());
-                dnsResolver.subscribeForResolving(this);
+                serverChannel.connect(
+                        new InetSocketAddress(dnsResolver.resolve(destinationAddr.getAddress()),
+                                                destinationPort)
+                );
+                //dnsResolver.subscribeForResolving(this);
                 //serverChannel.connect(new InetSocketAddress(, destinationPort));
             }
         }

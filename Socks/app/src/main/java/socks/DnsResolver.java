@@ -2,10 +2,14 @@ package socks;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.xbill.DNS.*;
+import org.xbill.DNS.Record;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.channels.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,14 +24,16 @@ public class DnsResolver {
     private final Selector selector;
     private final DatagramChannel dnsChannel;
     private HashMap<String, String> ips;
+    private Resolver resolver;
 
     private final List<DnsSubscriber> subscribers;
 
-    public DnsResolver(Selector selector, DatagramChannel dnsChannel) {
+    public DnsResolver(Selector selector, DatagramChannel dnsChannel) throws UnknownHostException {
         readConfig();
         this.selector = selector;
         this.dnsChannel = dnsChannel;
         subscribers = new ArrayList<>();
+        resolver = new SimpleResolver("9.9.9.9");
     }
 
     private void readConfig() {
@@ -37,18 +43,20 @@ public class DnsResolver {
             systemProps.load(dnsPropsFile);
             System.setProperties(systemProps);
 
-            Properties dnsProps = new Properties();
-            dnsPropsFile = DnsResolver.class.getClassLoader().getResourceAsStream(PROPS_FILE_NAME);
-            dnsProps.load(dnsPropsFile);
-            log.debug("Loaded dns properties: " + dnsProps);
+            if (log.isDebugEnabled()) {
+                Properties dnsProps = new Properties();
+                dnsPropsFile = DnsResolver.class.getClassLoader().getResourceAsStream(PROPS_FILE_NAME);
+                dnsProps.load(dnsPropsFile);
+                log.debug("Loaded dns properties: " + dnsProps);
+            }
         } catch (IOException e) {
             log.error("Can not read dns config, reason: " + e.getMessage());
         }
     }
 
-    public void resolve(String address) throws ClosedChannelException {
+    public InetAddress resolve(String address) throws IOException {
         // create dns request
-        dnsChannel.register(selector, SelectionKey.OP_WRITE, this);
+        return Address.getByName(address);
     }
 
     public void subscribeForResolving(DnsSubscriber subscriber) {
