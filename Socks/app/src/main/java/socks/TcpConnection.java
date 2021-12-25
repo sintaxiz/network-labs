@@ -31,7 +31,9 @@ public class TcpConnection implements DnsSubscriber {
     SocketChannel serverChannel;
 
 
-    byte[] messageToClient;
+    private final int BYTE_BUFFER_SIZE = 1024;
+    //byte[] messageToClient;
+    private ByteBuffer msgToClient;
     byte[] messageToServer;
     ByteBuffer messageFromInput;
     byte[] tooShortMessage;
@@ -47,8 +49,9 @@ public class TcpConnection implements DnsSubscriber {
         this.clientChannel = clientChannel;
         this.currentState = currentState;
         this.selector = selector;
-        byteBuffer = ByteBuffer.allocate(1024);
-        messageFromInput = ByteBuffer.allocate(1024);
+        byteBuffer = ByteBuffer.allocate(BYTE_BUFFER_SIZE);
+        messageFromInput = ByteBuffer.allocate(BYTE_BUFFER_SIZE);
+        msgToClient = ByteBuffer.allocate(BYTE_BUFFER_SIZE);
     }
 
     private byte[] readData(SocketChannel channel) throws IOException {
@@ -75,7 +78,7 @@ public class TcpConnection implements DnsSubscriber {
         ServerAuthChoice serverAuthChoice = new ServerAuthChoice(SocksVersion.SOCKS5, AuthMethod.NO_AUTH);
 
         // add message, later this message will write to inputChannel
-        messageToClient = serverAuthChoice.toByteArray();
+        msgToClient.put(serverAuthChoice.toByteArray());
         clientChannel.register(selector, SelectionKey.OP_WRITE, this);
         currentState = TcpConnectionState.WAITING_FOR_COMMAND;
     }
@@ -109,7 +112,7 @@ public class TcpConnection implements DnsSubscriber {
     }
 
     private void queueClientMessage(SocksMessage message) throws ClosedChannelException, WrongSocksMessageException {
-        messageToClient = message.toByteArray();
+        msgToClient.put(message.toByteArray());
     }
 
     private void startTcpConnection(Socks5Address destinationAddr, int destinationPort) throws IOException {
@@ -160,13 +163,13 @@ public class TcpConnection implements DnsSubscriber {
         channel.write(msg);
     }
 
-    private void readAuthRequest() throws IOException {
+    private void readAuthRequest() throws IOException, WrongSocksMessageException {
         log.debug("Going to read auth request...");
         byte[] msg = readData(clientChannel);         // actually ignoring it now
         log.debug("Successfully read auth request!");
 
         ServerResponse serverResponse = new ServerResponse(AuthMethod.NO_AUTH, ServerStatus.SUCCESS);
-        messageToClient = serverResponse.toByteArray();
+        queueClientMessage(serverResponse);
         currentState = TcpConnectionState.WAITING_FOR_COMMAND;
     }
 
@@ -184,10 +187,11 @@ public class TcpConnection implements DnsSubscriber {
     public void write(SocketChannel socketChannel, SelectionKey key) throws IOException {
         log.debug("going write to " + socketChannel.getRemoteAddress());
         if (socketChannel.equals(clientChannel)) {
-            if (messageToClient != null) {
-                writeToChannel(socketChannel, ByteBuffer.wrap(messageToClient));
-                log.debug("Successfully write to client channel: " + Arrays.toString(messageToClient));
-                messageToClient = null;
+            if (msgToClient.position() != 0) {
+                msgToClient.flip();
+                socketChannel.write(msgToClient);
+                msgToClient.clear();
+                log.debug("Successfully write to client channel: " + msgToClient);
                 key.interestOps(SelectionKey.OP_READ);
             } else {
                 log.debug("no message to client..");
@@ -237,12 +241,9 @@ public class TcpConnection implements DnsSubscriber {
             //log.debug("successfully register server channel: " + serverChannel.getRemoteAddress());
         } else if (socketChannel.equals(serverChannel)) {
             log.debug("Going to read from server...");
-            if (messageToClient != null && messageToClient.length > 0) {
-                messageToClient = concatenate(messageToClient, readData(serverChannel));
-            } else {
-                messageToClient = readData(serverChannel);
-            }
-            if (messageToClient.length != 0) {
+            byte [] msg = readData(serverChannel);
+            if (msg.length != 0) {
+                msgToClient.put(msg);
                 clientChannel.register(selector, SelectionKey.OP_WRITE, this);
             } else {
                 key.cancel();
