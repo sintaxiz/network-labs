@@ -31,15 +31,15 @@ public class TcpConnection implements DnsSubscriber {
     SocketChannel serverChannel;
 
 
-    private final int BYTE_BUFFER_SIZE = 1024;
+    private final static int BYTE_BUFFER_SIZE = 1024;
     //byte[] messageToClient;
-    private ByteBuffer msgToClient;
-    byte[] messageToServer;
+    private final ByteBuffer msgToClient;
+    //byte[] messageToServer;
+    private final ByteBuffer msgToServer;
     ByteBuffer messageFromInput;
     byte[] tooShortMessage;
     TcpConnectionState currentState;
 
-    ByteBuffer byteBuffer;
 
     // Selector associated with input/output channels
     Selector selector;
@@ -49,9 +49,9 @@ public class TcpConnection implements DnsSubscriber {
         this.clientChannel = clientChannel;
         this.currentState = currentState;
         this.selector = selector;
-        byteBuffer = ByteBuffer.allocate(BYTE_BUFFER_SIZE);
         messageFromInput = ByteBuffer.allocate(BYTE_BUFFER_SIZE);
         msgToClient = ByteBuffer.allocate(BYTE_BUFFER_SIZE);
+        msgToServer = ByteBuffer.allocate(BYTE_BUFFER_SIZE);
     }
 
     private byte[] readData(SocketChannel channel) throws IOException {
@@ -200,13 +200,11 @@ public class TcpConnection implements DnsSubscriber {
             }
         } else if (socketChannel.equals(serverChannel)) {
             log.debug("Wants to write to server channel...");
-            if (messageToServer != null && messageToServer.length > 0) {
-                byteBuffer.put(messageToServer);
-                byteBuffer.flip();
-                writeToChannel(socketChannel, byteBuffer);
-                log.debug("Successfully write to server channel: " + Arrays.toString(messageToServer));
-                byteBuffer.clear();
-                messageToServer = null;
+            if (msgToServer.position() != 0) {
+                msgToServer.flip();
+                socketChannel.write(msgToServer);
+                msgToServer.clear();
+                //log.debug("Successfully write to server channel: " + ms);
                 key.interestOps(SelectionKey.OP_READ);
             } else {
                 key.cancel();
@@ -228,12 +226,9 @@ public class TcpConnection implements DnsSubscriber {
     private void transmitData(SocketChannel socketChannel, SelectionKey key) throws IOException {
         if (socketChannel.equals(clientChannel)) {
             log.debug("Going to read from client...");
-            if (messageToServer != null && messageToServer.length > 0) {
-                messageToServer = concatenate(messageToServer, readData(clientChannel));
-            } else {
-                messageToServer = readData(clientChannel);
-            }
-            if (messageToServer.length != 0) {
+            byte [] msg = readData(clientChannel);
+            if (msg.length > 0) {
+                msgToServer.put(msg);
                 serverChannel.register(selector, SelectionKey.OP_WRITE, this);
             } else {
                 key.cancel();
